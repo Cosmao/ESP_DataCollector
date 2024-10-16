@@ -7,6 +7,7 @@
 #include "esp_wifi.h"
 #include "freertos/idf_additions.h"
 #include "include/dht11.h"
+#include "include/settings.h"
 #include "include/wifi.h"
 #include "portmacro.h"
 #include <stdio.h>
@@ -17,6 +18,7 @@ static const char *HTTPTAG = "HTTP";
 
 #define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 2048
+#define MAX_STR_BUFFER 128
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   static char *output_buffer; // Buffer to store response of http request from
@@ -118,109 +120,81 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
-void httpsTask(void *pvParameter) {
-#define buffSize 128
-  settings_t *settingsPtr = (settings_t *)pvParameter;
-  if (wifiInitStation(settingsPtr)) {
-    dht_t *dht = settingsPtr->dht;
-
-    uint8_t mac[6];
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
-
-    char url[buffSize];
-    snprintf(url, buffSize,
-             /*"https://www.skippings.com/api/sensor-data/"*/
-             "https://myapp-latest-lpiy.onrender.com/sensor/add/"
-             "%0x2:%0x2:%0x2:%0x2:%0x2:%0x2",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-    esp_http_client_config_t config = {
-        .url = url,
-        .event_handler = _http_event_handler,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-        .transport_type = HTTP_TRANSPORT_OVER_SSL,
-    };
-
-    while (true) {
-      if (!dht->sent) {
-        esp_http_client_handle_t client = esp_http_client_init(&config);
-        esp_http_client_set_method(client, HTTP_METHOD_POST);
-        esp_http_client_set_header(client, "Content-Type", "application/json");
-
-        char post[buffSize];
-        if (xSemaphoreTake(settingsPtr->mutex, (TickType_t)10) == pdTRUE) {
-          snprintf(
-              post, buffSize,
-              "{\"temperature\":%.1f,\"humidity\":%.1f,\"name\":\"EmilESP\"}",
-              getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
-          dht->sent = true;
-          xSemaphoreGive(settingsPtr->mutex);
-
-          ESP_LOGI(HTTPTAG, "%s", post);
-
-          esp_http_client_set_post_field(client, post, strlen(post));
-          esp_err_t err = esp_http_client_perform(client);
-
-          if (err == ESP_OK) {
-            ESP_LOGI(HTTPTAG, "HTTPS Status = %d, content_length = %" PRId64,
-                     esp_http_client_get_status_code(client),
-                     esp_http_client_get_content_length(client));
-            if (esp_http_client_get_status_code(client) == 401) {
-              (void)httpsAuthenticate();
-            }
-          } else {
-            ESP_LOGE(HTTPTAG, "Error perform http request %s",
-                     esp_err_to_name(err));
-          }
-          esp_http_client_cleanup(client);
-        } else {
-          ESP_LOGE(HTTPTAG, "Could not aquire mutex");
-        }
-      }
-      vTaskDelay((updateTime * 1000) / portTICK_PERIOD_MS);
-    }
-  }
-  ESP_LOGE("WIFI", "Could not establish wifi connection!");
-  vTaskDelete(NULL);
-}
-
-esp_err_t httpsAuthenticate(void) {
-  ESP_LOGE(HTTPTAG, "You need to auth the MAC address before!");
-  printMAC();
-  return ESP_ERR_INVALID_RESPONSE;
-
-  ESP_LOGI(HTTPTAG, "Trying to auth");
-  esp_http_client_config_t config = {
-      .url = "https://www.skippings.com/api/iot-device",
-      .event_handler = _http_event_handler,
-      .skip_cert_common_name_check = true,
-      .transport_type = HTTP_TRANSPORT_OVER_SSL,
-  };
-
-  esp_http_client_handle_t client = esp_http_client_init(&config);
-  esp_http_client_set_method(client, HTTP_METHOD_POST);
-  esp_http_client_set_header(client, "Content-Type",
-                             "application/x-www-form-urlencoded");
+static esp_err_t getEndpointURL(char *array, uint8_t maxSize) {
   uint8_t mac[6];
   esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
-  char post[64];
-  snprintf(post, 64,
-           "name=EmilESP&mac="
-           "%0x2:%0x2:%0x2:%0x2:%0x2:%0x2)",
-           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  esp_http_client_set_post_field(client, post, strlen(post));
-  esp_err_t authErr = esp_http_client_perform(client);
-  if (authErr == ESP_OK) {
+
+  /*  snprintf(array, maxSize,
+             "https://myapp-latest-lpiy.onrender.com/sensor/add/"
+             "%0x2:%0x2:%0x2:%0x2:%0x2:%0x2",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);*/
+  snprintf(array, maxSize, "https://httpbin.org/post");
+  return ESP_OK;
+}
+
+static esp_err_t setupPost(esp_http_client_handle_t *client,
+                           settings_t *settingsPtr) {
+  dht_t *dht = settingsPtr->dht;
+  esp_http_client_set_method(*client, HTTP_METHOD_POST);
+  esp_http_client_set_header(*client, "Content-Type", "application/json");
+  char post[MAX_STR_BUFFER];
+  if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10) == pdTRUE) {
+    snprintf(post, MAX_STR_BUFFER,
+             "{\"temperature\":%.1f,\"humidity\":%.1f,\"name\":\"EmilESP\"}",
+             getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
+    dht->sent = true;
+    xSemaphoreGive(dht->dhtMutex);
+    ESP_LOGI(HTTPTAG, "%s", post);
+    esp_http_client_set_post_field(*client, post, strlen(post));
+
+    return ESP_OK;
+  } else {
+    ESP_LOGE(HTTPTAG, "Could not aquire mutex");
+    return ESP_FAIL;
+  }
+}
+
+static void httpsSendMessage(esp_http_client_config_t *config,
+                             settings_t *settingsPtr) {
+  esp_http_client_handle_t client = esp_http_client_init(config);
+  esp_err_t err = setupPost(&client, settingsPtr);
+  if (err != ESP_OK) {
+    esp_http_client_cleanup(client);
+    return;
+  }
+  err = esp_http_client_perform(client);
+  if (err == ESP_OK) {
     ESP_LOGI(HTTPTAG, "HTTPS Status = %d, content_length = %" PRId64,
              esp_http_client_get_status_code(client),
              esp_http_client_get_content_length(client));
-    if (esp_http_client_get_status_code(client) == 200) {
-      ESP_LOGI(HTTPTAG, "Successful Auth");
-      return ESP_OK;
-    }
   } else {
-    ESP_LOGE(HTTPTAG, "Error perform http request %s",
-             esp_err_to_name(authErr));
+    ESP_LOGE(HTTPTAG, "Error perform http request %s", esp_err_to_name(err));
   }
-  return ESP_ERR_INVALID_RESPONSE;
+  esp_http_client_cleanup(client);
+}
+
+void httpsTask(void *pvParameter) {
+  settings_t *settingsPtr = (settings_t *)pvParameter;
+  if (!wifiInitStation(settingsPtr)) {
+    ESP_LOGE("WIFI", "Could not establish wifi connection!");
+    vTaskDelete(NULL);
+  }
+
+  dht_t *dht = settingsPtr->dht;
+  char url[MAX_STR_BUFFER];
+  getEndpointURL(url, MAX_STR_BUFFER);
+
+  esp_http_client_config_t config = {
+      .url = url,
+      .event_handler = _http_event_handler,
+      .crt_bundle_attach = esp_crt_bundle_attach,
+      .transport_type = HTTP_TRANSPORT_OVER_SSL,
+  };
+
+  while (true) {
+    if (!dht->sent) {
+      httpsSendMessage(&config, settingsPtr);
+    }
+    vTaskDelay((updateTime * 1000) / portTICK_PERIOD_MS);
+  }
 }

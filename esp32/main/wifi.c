@@ -6,7 +6,6 @@
 #include "freertos/event_groups.h"
 #include "freertos/idf_additions.h"
 #include "freertos/task.h"
-#include "include/usb.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -103,7 +102,7 @@ bool wifiInitStation(settings_t *settings) {
           },
   };
 
-  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+  if (xSemaphoreTake(settings->settingsMutex, (TickType_t)10)) {
     for (int i = 0; i < 32; i++) {
       wifi_config.sta.ssid[i] = settings->SSID[i];
       if (settings->SSID[i] == '\0') {
@@ -117,7 +116,7 @@ bool wifiInitStation(settings_t *settings) {
         break;
       }
     }
-    xSemaphoreGive(settings->mutex);
+    xSemaphoreGive(settings->settingsMutex);
   } else {
     ESP_LOGE(WIFITAG, "Failed to aquire mutex");
   }
@@ -144,11 +143,4 @@ bool wifiInitStation(settings_t *settings) {
     ESP_LOGE(WIFITAG, "UNEXPECTED EVENT");
   }
   return bits & WIFI_CONNECTED_BIT;
-}
-
-void printMAC(void) {
-  uint8_t mac[6];
-  esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
-  ESP_LOGI(WIFITAG, "MAC address: %0x2:%0x2:%0x2:%0x2:%0x2:%0x2", mac[0],
-           mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
