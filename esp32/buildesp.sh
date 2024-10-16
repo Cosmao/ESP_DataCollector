@@ -19,6 +19,10 @@ command -v idf.py > /dev/null 2>&1 || {
 echo "Starting build"
 
 cd esp32
+
+#BUILD_TARGET=$(idf.py set-target esp32s3)
+#echo $BUILD_TARGET
+
 BUILD_RESULT=$(idf.py build)
 BUILD_SUCCESS=$(echo "$BUILD_RESULT" | rg -i "project build complete")
 if [ -z "$BUILD_SUCCESS" ]; then
@@ -26,8 +30,11 @@ if [ -z "$BUILD_SUCCESS" ]; then
   echo "$BUILD_RESULT"
   exit 1;
 else
+  echo "$BUILD_RESULT"
   echo "Build success"
 fi
+
+idf.py size
 
 echo "Starting flash to $USB_PORT, can take a minute"
 FLASH_RESULT=$(idf.py -p $USB_PORT flash)
