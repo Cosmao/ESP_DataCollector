@@ -11,6 +11,7 @@
 
 static const char *DHTTAG = "DHT";
 
+// TODO: Add gpio pin to settings
 dht_err_t dhtInit(dht_t *dht) {
   if (dht == NULL) {
     return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
@@ -41,8 +42,10 @@ void wakeDHT(dht_t *dht) {
   gpio_set_direction(dht->gpio, GPIO_MODE_INPUT);
 }
 
-dht_err_t dhtRead(dht_t *dht) {
+dht_err_t dhtRead(settings_t *settings) {
   int64_t curTime = esp_timer_get_time();
+  // NOTE: Only this func touches lastRead so no mutex needed
+  dht_t *dht = settings->dht;
   if (dht->lastRead > curTime - 2000000) {
     return DHT_READ_TOO_EARLY;
   }
@@ -73,14 +76,19 @@ dht_err_t dhtRead(dht_t *dht) {
     return DHT_CHECKSUM_FAIL;
   } else if ((incomingData[0] + incomingData[1] + incomingData[2] +
               incomingData[3] + incomingData[4]) == 0) {
-    return DHT_FAIL;
+    return DHT_BAD_DATA;
   }
 
-  dht->temperature.integer = incomingData[2];
-  dht->temperature.decimal = incomingData[3];
-  dht->humidity.integer = incomingData[0];
-  dht->humidity.decimal = incomingData[1];
-  dht->sent = false;
+  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+    dht->temperature.integer = incomingData[2];
+    dht->temperature.decimal = incomingData[3];
+    dht->humidity.integer = incomingData[0];
+    dht->humidity.decimal = incomingData[1];
+    dht->sent = false;
+    xSemaphoreGive(settings->mutex);
+  } else {
+    return DHT_MUTEX_FAIL;
+  }
 
   return DHT_OK;
 }
@@ -90,21 +98,19 @@ float getDHTValue(dhtValue *dhtValue) {
 }
 
 void dhtTask(void *pvParameter) {
-  dht_t *dhtStructPtr = (dht_t *)pvParameter;
-  vTaskDelay((dhtTimeBetweenRead * 1000) / portTICK_PERIOD_MS);
-  ESP_LOGI(DHTTAG, "Entering dht loop");
+  settings_t *settings = (settings_t *)pvParameter;
   while (true) {
-    dht_err_t dhtStatus = dhtRead(dhtStructPtr);
-    switch (dhtStatus) {
+    dht_err_t dhtRet = dhtRead(settings);
+    switch (dhtRet) {
     case DHT_OK:
       ESP_LOGI(DHTTAG, "Temp: %.1f\tHumidity: %.1f%%",
-               getDHTValue(&dhtStructPtr->temperature),
-               getDHTValue(&dhtStructPtr->humidity));
+               getDHTValue(&settings->dht->temperature),
+               getDHTValue(&settings->dht->humidity));
       break;
     case DHT_TIMEOUT_FAIL:
       ESP_LOGE(DHTTAG, "Timeout error");
       break;
-    case DHT_FAIL:
+    case DHT_BAD_DATA:
       ESP_LOGE(DHTTAG, "Unk error in dht");
       break;
     case DHT_READ_TOO_EARLY:
@@ -112,6 +118,9 @@ void dhtTask(void *pvParameter) {
       break;
     case DHT_CHECKSUM_FAIL:
       ESP_LOGE(DHTTAG, "Checksum error");
+      break;
+    case DHT_MUTEX_FAIL:
+      ESP_LOGE(DHTTAG, "Failed to aquire mutex");
       break;
     }
     vTaskDelay((dhtTimeBetweenRead * 1000) / portTICK_PERIOD_MS);

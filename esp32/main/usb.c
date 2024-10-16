@@ -5,6 +5,8 @@
 #include "freertos/idf_additions.h"
 #include "nvs.h"
 #include "projdefs.h"
+#include "tinyusb.h"
+#include "tusb_cdc_acm.h"
 #include <stdio.h>
 
 static const char *ESP_ssid = "SSID";
@@ -12,38 +14,46 @@ static const char *ESP_pw = "PASSWORD";
 static const char *ESP_Name = "NAME";
 
 static interpret_ret interpretInput(char *str, settings_t *settings) {
-  switch (str[0]) {
-  case 's':
-    snprintf(settings->SSID, bufferSize, "%s", (str + 1));
-    return INTERP_OK_SSID;
-  case 'p':
-    snprintf(settings->password, bufferSize, "%s", (str + 1));
-    return INTERP_OK_PW;
-  case 'n':
-    snprintf(settings->name, bufferSize, "%s", (str + 1));
-    return INTERP_OK_NAME;
-  case 'r':
-    return INTERP_RESTART;
-  case 'c':
-    return INTERP_COMMIT;
-  case 'g':
-    return INTERP_REQ_PRINT;
+  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+    interpret_ret ret = INTERP_BAD_DATA;
+    switch (str[0]) {
+    case 's':
+      snprintf(settings->SSID, bufferSize, "%s", (str + 1));
+      ret = INTERP_OK_SSID;
+      break;
+    case 'p':
+      snprintf(settings->password, bufferSize, "%s", (str + 1));
+      ret = INTERP_OK_PW;
+      break;
+    case 'n':
+      snprintf(settings->name, bufferSize, "%s", (str + 1));
+      ret = INTERP_OK_NAME;
+      break;
+    case 'r':
+      ret = INTERP_RESTART;
+      break;
+    case 'c':
+      ret = INTERP_COMMIT;
+      break;
+    case 'g':
+      ret = INTERP_REQ_PRINT;
+      break;
+    }
+    xSemaphoreGive(settings->mutex);
+    return ret != INTERP_BAD_DATA ? ret : INTERP_BAD_DATA;
   }
-  return INTERPED_BAD_DATA;
+  return INTERP_NO_MUTEX;
 }
 
 static esp_err_t nvsRead(const char *key, char *buffer, size_t buffSize) {
-  ESP_LOGI("NVS", "NVS starting");
   nvs_handle_t nvsHandle;
   esp_err_t ret = nvs_open("storage", NVS_READWRITE, &nvsHandle);
   if (ret == ESP_OK) {
     ret = nvs_get_str(nvsHandle, key, buffer, &buffSize);
     switch (ret) {
     case ESP_OK:
-      ESP_LOGI("NVS", "Read good on key %s", key);
       break;
     case ESP_ERR_NVS_NOT_FOUND:
-      ESP_LOGI("NVS", "Could not find key %s", key);
       buffer[0] = '\0';
       break;
     }
@@ -53,7 +63,6 @@ static esp_err_t nvsRead(const char *key, char *buffer, size_t buffSize) {
 }
 
 static esp_err_t nvsCommit(const char *key, char *buffer) {
-  /*ESP_LOGI("NVS", "NVS starting");*/
   nvs_handle_t nvsHandle;
   esp_err_t ret = nvs_open("storage", NVS_READWRITE, &nvsHandle);
   if (ret == ESP_OK) {
@@ -69,13 +78,11 @@ static esp_err_t nvsCommit(const char *key, char *buffer) {
     }
   }
   nvs_close(nvsHandle);
-  /*ESP_LOGI("NVS", "commit good %s", key);*/
   return ret;
 }
 
 static void nvsCommitAll(settings_t *settings) {
-  /*ESP_LOGI("NVS", "Committing...");*/
-  esp_err_t ret = ESP_OK;
+  esp_err_t ret;
   ret = nvsCommit(ESP_ssid, settings->SSID);
   if (ret != ESP_OK) {
     return;
@@ -91,13 +98,32 @@ static void nvsCommitAll(settings_t *settings) {
   ESP_LOGI("NVS", "All commit good");
 }
 
+static void nvsReadErrCheck(esp_err_t ret) {
+  switch (ret) {
+  case ESP_OK:
+    return;
+  case ESP_ERR_NVS_NOT_FOUND:
+    ESP_LOGI("NVS", "Key not found");
+    break;
+  case ESP_ERR_NVS_INVALID_HANDLE:
+    ESP_LOGE("NVS", "Handle bad");
+    break;
+  }
+}
+
 esp_err_t settingsInit(settings_t *settings) {
   if (settings == NULL) {
     return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
   }
-  (void)nvsRead(ESP_ssid, settings->SSID, sizeof(settings->SSID));
-  (void)nvsRead(ESP_pw, settings->password, sizeof(settings->password));
-  (void)nvsRead(ESP_Name, settings->name, sizeof(settings->name));
+  settings->mutex = xSemaphoreCreateMutex();
+  if (settings->mutex == NULL) {
+    ESP_LOGE("MUTEX", "Mutex creation failed");
+    return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
+  }
+  nvsReadErrCheck(nvsRead(ESP_ssid, settings->SSID, sizeof(settings->SSID)));
+  nvsReadErrCheck(
+      nvsRead(ESP_pw, settings->password, sizeof(settings->password)));
+  nvsReadErrCheck(nvsRead(ESP_Name, settings->name, sizeof(settings->name)));
   return ESP_OK;
 }
 
@@ -120,6 +146,8 @@ void usbTask(void *pvParameter) {
   ESP_ERROR_CHECK(tusb_cdc_acm_init(&acm_cfg));
 
   char buffer[bufferSize];
+  // TODO: Read character by character, encounting a NULL or newline? switch on
+  // it and treat the input accordingly
   while (1) {
     if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
       interpretInput(buffer, settingsPtr);
@@ -139,12 +167,15 @@ void usbTask(void *pvParameter) {
       case INTERP_RESTART:
         esp_restart();
         break;
-      case INTERPED_BAD_DATA:
+      case INTERP_BAD_DATA:
         ESP_LOGI("USB", "Bad data");
         break;
       case INTERP_REQ_PRINT:
         ESP_LOGI("USB", "Current settings\nSSID: %s\nPW: %s\nName: %s",
                  settingsPtr->SSID, settingsPtr->password, settingsPtr->name);
+        break;
+      case INTERP_NO_MUTEX:
+        ESP_LOGE("USB", "Could not get mutex");
         break;
       }
     }

@@ -1,4 +1,5 @@
 #include "include/https.h"
+#include "esp_crt_bundle.h"
 #include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -6,7 +7,6 @@
 #include "esp_wifi.h"
 #include "freertos/idf_additions.h"
 #include "include/dht11.h"
-#include "include/usb.h"
 #include "include/wifi.h"
 #include "portmacro.h"
 #include <stdio.h>
@@ -129,14 +129,15 @@ void httpsTask(void *pvParameter) {
 
     char url[buffSize];
     snprintf(url, buffSize,
-             "https://www.skippings.com/api/sensor-data/"
+             /*"https://www.skippings.com/api/sensor-data/"*/
+             "https://myapp-latest-lpiy.onrender.com/sensor/add/"
              "%0x2:%0x2:%0x2:%0x2:%0x2:%0x2",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     esp_http_client_config_t config = {
         .url = url,
         .event_handler = _http_event_handler,
-        .skip_cert_common_name_check = true,
+        .crt_bundle_attach = esp_crt_bundle_attach,
         .transport_type = HTTP_TRANSPORT_OVER_SSL,
     };
 
@@ -147,26 +148,34 @@ void httpsTask(void *pvParameter) {
         esp_http_client_set_header(client, "Content-Type", "application/json");
 
         char post[buffSize];
-        snprintf(post, buffSize, "{\"temperature\":%.1f,\"humidity\":%.1f}",
-                 getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
-        dht->sent = true;
-        ESP_LOGI(HTTPTAG, "%s", post);
+        if (xSemaphoreTake(settingsPtr->mutex, (TickType_t)10) == pdTRUE) {
+          snprintf(
+              post, buffSize,
+              "{\"temperature\":%.1f,\"humidity\":%.1f,\"name\":\"EmilESP\"}",
+              getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
+          dht->sent = true;
+          xSemaphoreGive(settingsPtr->mutex);
 
-        esp_http_client_set_post_field(client, post, strlen(post));
-        esp_err_t err = esp_http_client_perform(client);
+          ESP_LOGI(HTTPTAG, "%s", post);
 
-        if (err == ESP_OK) {
-          ESP_LOGI(HTTPTAG, "HTTPS Status = %d, content_length = %" PRId64,
-                   esp_http_client_get_status_code(client),
-                   esp_http_client_get_content_length(client));
-          if (esp_http_client_get_status_code(client) == 401) {
-            (void)httpsAuthenticate();
+          esp_http_client_set_post_field(client, post, strlen(post));
+          esp_err_t err = esp_http_client_perform(client);
+
+          if (err == ESP_OK) {
+            ESP_LOGI(HTTPTAG, "HTTPS Status = %d, content_length = %" PRId64,
+                     esp_http_client_get_status_code(client),
+                     esp_http_client_get_content_length(client));
+            if (esp_http_client_get_status_code(client) == 401) {
+              (void)httpsAuthenticate();
+            }
+          } else {
+            ESP_LOGE(HTTPTAG, "Error perform http request %s",
+                     esp_err_to_name(err));
           }
+          esp_http_client_cleanup(client);
         } else {
-          ESP_LOGE(HTTPTAG, "Error perform http request %s",
-                   esp_err_to_name(err));
+          ESP_LOGE(HTTPTAG, "Could not aquire mutex");
         }
-        esp_http_client_cleanup(client);
       }
       vTaskDelay((updateTime * 1000) / portTICK_PERIOD_MS);
     }
