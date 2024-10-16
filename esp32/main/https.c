@@ -7,6 +7,7 @@
 #include "esp_wifi.h"
 #include "freertos/idf_additions.h"
 #include "include/dht11.h"
+#include "include/settings.h"
 #include "include/wifi.h"
 #include "portmacro.h"
 #include <stdio.h>
@@ -137,12 +138,12 @@ static esp_err_t setupPost(esp_http_client_handle_t *client,
   esp_http_client_set_method(*client, HTTP_METHOD_POST);
   esp_http_client_set_header(*client, "Content-Type", "application/json");
   char post[MAX_STR_BUFFER];
-  if (xSemaphoreTake(settingsPtr->mutex, (TickType_t)10) == pdTRUE) {
+  if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10) == pdTRUE) {
     snprintf(post, MAX_STR_BUFFER,
              "{\"temperature\":%.1f,\"humidity\":%.1f,\"name\":\"EmilESP\"}",
              getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
     dht->sent = true;
-    xSemaphoreGive(settingsPtr->mutex);
+    xSemaphoreGive(dht->dhtMutex);
     ESP_LOGI(HTTPTAG, "%s", post);
     esp_http_client_set_post_field(*client, post, strlen(post));
 

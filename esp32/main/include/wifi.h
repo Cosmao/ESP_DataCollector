@@ -1,4 +1,4 @@
-#include "include/dht11.h"
+#include "include/settings.h"
 #include <stdbool.h>
 
 #ifndef _wifi_h

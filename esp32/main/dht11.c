@@ -5,6 +5,7 @@
 #include "esp_timer.h"
 #include "freertos/idf_additions.h"
 #include "hal/gpio_types.h"
+#include "projdefs.h"
 #include "rom/ets_sys.h"
 #include "soc/gpio_num.h"
 #include <stdint.h>
@@ -14,6 +15,11 @@ static const char *DHTTAG = "DHT";
 // TODO: Add gpio pin to settings
 dht_err_t dhtInit(dht_t *dht) {
   if (dht == NULL) {
+    return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
+  }
+  dht->dhtMutex = xSemaphoreCreateMutex();
+  if (dht->dhtMutex == NULL) {
+    ESP_LOGE("MUTEX", "Mutex creation failed");
     return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
   }
   dht->gpio = GPIO_NUM_7;
@@ -42,10 +48,9 @@ void wakeDHT(dht_t *dht) {
   gpio_set_direction(dht->gpio, GPIO_MODE_INPUT);
 }
 
-dht_err_t dhtRead(settings_t *settings) {
+dht_err_t dhtRead(dht_t *dht) {
   int64_t curTime = esp_timer_get_time();
   // NOTE: Only this func touches lastRead so no mutex needed
-  dht_t *dht = settings->dht;
   if (dht->lastRead > curTime - 2000000) {
     return DHT_READ_TOO_EARLY;
   }
@@ -79,13 +84,13 @@ dht_err_t dhtRead(settings_t *settings) {
     return DHT_BAD_DATA;
   }
 
-  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+  if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10)) {
     dht->temperature.integer = incomingData[2];
     dht->temperature.decimal = incomingData[3];
     dht->humidity.integer = incomingData[0];
     dht->humidity.decimal = incomingData[1];
     dht->sent = false;
-    xSemaphoreGive(settings->mutex);
+    xSemaphoreGive(dht->dhtMutex);
   } else {
     return DHT_MUTEX_FAIL;
   }
@@ -98,14 +103,13 @@ float getDHTValue(dhtValue *dhtValue) {
 }
 
 void dhtTask(void *pvParameter) {
-  settings_t *settings = (settings_t *)pvParameter;
+  dht_t *dht = (dht_t *)pvParameter;
   while (true) {
-    dht_err_t dhtRet = dhtRead(settings);
+    dht_err_t dhtRet = dhtRead(dht);
     switch (dhtRet) {
     case DHT_OK:
       ESP_LOGI(DHTTAG, "Temp: %.1f\tHumidity: %.1f%%",
-               getDHTValue(&settings->dht->temperature),
-               getDHTValue(&settings->dht->humidity));
+               getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
       break;
     case DHT_TIMEOUT_FAIL:
       ESP_LOGE(DHTTAG, "Timeout error");

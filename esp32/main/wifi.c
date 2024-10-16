@@ -102,7 +102,7 @@ bool wifiInitStation(settings_t *settings) {
           },
   };
 
-  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+  if (xSemaphoreTake(settings->settingsMutex, (TickType_t)10)) {
     for (int i = 0; i < 32; i++) {
       wifi_config.sta.ssid[i] = settings->SSID[i];
       if (settings->SSID[i] == '\0') {
@@ -116,7 +116,7 @@ bool wifiInitStation(settings_t *settings) {
         break;
       }
     }
-    xSemaphoreGive(settings->mutex);
+    xSemaphoreGive(settings->settingsMutex);
   } else {
     ESP_LOGE(WIFITAG, "Failed to aquire mutex");
   }

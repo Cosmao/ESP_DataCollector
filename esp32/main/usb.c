@@ -4,25 +4,26 @@
 #include "esp_system.h"
 #include "freertos/idf_additions.h"
 #include "include/nvStorage.h"
+#include "include/settings.h"
 #include "projdefs.h"
 #include "tinyusb.h"
 #include "tusb_cdc_acm.h"
 #include <stdio.h>
 
 static interpret_ret interpretInput(char *str, settings_t *settings) {
-  if (xSemaphoreTake(settings->mutex, (TickType_t)10)) {
+  if (xSemaphoreTake(settings->settingsMutex, (TickType_t)10)) {
     interpret_ret ret = INTERP_BAD_DATA;
     switch (str[0]) {
     case 's':
-      snprintf(settings->SSID, bufferSize, "%s", (str + 1));
+      snprintf(settings->SSID, settingsBufferSize, "%s", (str + 1));
       ret = INTERP_OK_SSID;
       break;
     case 'p':
-      snprintf(settings->password, bufferSize, "%s", (str + 1));
+      snprintf(settings->password, settingsBufferSize, "%s", (str + 1));
       ret = INTERP_OK_PW;
       break;
     case 'n':
-      snprintf(settings->name, bufferSize, "%s", (str + 1));
+      snprintf(settings->name, settingsBufferSize, "%s", (str + 1));
       ret = INTERP_OK_NAME;
       break;
     case 'r':
@@ -35,26 +36,10 @@ static interpret_ret interpretInput(char *str, settings_t *settings) {
       ret = INTERP_REQ_PRINT;
       break;
     }
-    xSemaphoreGive(settings->mutex);
+    xSemaphoreGive(settings->settingsMutex);
     return ret != INTERP_BAD_DATA ? ret : INTERP_BAD_DATA;
   }
   return INTERP_NO_MUTEX;
-}
-
-esp_err_t settingsInit(settings_t *settings) {
-  if (settings == NULL) {
-    return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
-  }
-  settings->mutex = xSemaphoreCreateMutex();
-  if (settings->mutex == NULL) {
-    ESP_LOGE("MUTEX", "Mutex creation failed");
-    return errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY;
-  }
-  nvsReadErrCheck(nvsRead(ESP_ssid, settings->SSID, sizeof(settings->SSID)));
-  nvsReadErrCheck(
-      nvsRead(ESP_pw, settings->password, sizeof(settings->password)));
-  nvsReadErrCheck(nvsRead(ESP_Name, settings->name, sizeof(settings->name)));
-  return ESP_OK;
 }
 
 void usbTask(void *pvParameter) {
@@ -75,7 +60,7 @@ void usbTask(void *pvParameter) {
 
   ESP_ERROR_CHECK(tusb_cdc_acm_init(&acm_cfg));
 
-  char buffer[bufferSize];
+  char buffer[settingsBufferSize];
   // TODO: Read character by character, encounting a NULL or newline? switch on
   // it and treat the input accordingly
   while (1) {

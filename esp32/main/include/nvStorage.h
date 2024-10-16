@@ -1,7 +1,8 @@
 #ifndef nvStorage_h
+#define nvStorage_h
 
 #include "esp_err.h"
-#include "include/dht11.h"
+#include "include/settings.h"
 
 esp_err_t nvsRead(const char *key, char *buffer, size_t buffSize);
 esp_err_t nvsCommit(const char *key, char *buffer);
