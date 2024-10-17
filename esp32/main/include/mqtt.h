@@ -4,7 +4,7 @@
 #include "mqtt_client.h"
 #include "wifi.h"
 
-esp_mqtt_client_handle_t mqtt_init(void);
+esp_mqtt_client_handle_t mqttInit(void);
 void mqttTask(void *pvParameter);
 
 #endif // !__mqtt_h

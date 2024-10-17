@@ -4,6 +4,9 @@
 #include "include/dht11.h"
 #include "include/settings.h"
 
+// TODO: Add mTLS or something similar, subscribe to topic for new firmware
+// updates and start a https update then
+
 static const char *MQTTTAG = "Mqtt status";
 
 static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
@@ -50,7 +53,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
   }
 }
 
-esp_mqtt_client_handle_t mqtt_init(void) {
+esp_mqtt_client_handle_t mqttInit(void) {
   const esp_mqtt_client_config_t mqtt_conf = {
       .broker.address.uri = "mqtt://test.mosquitto.org:1883",
   };
@@ -67,7 +70,7 @@ void mqttTask(void *pvParameter) {
   dht_t *dhtStructPtr = settingsPtr->dht;
   if (wifiInitStation(settingsPtr)) {
     ESP_LOGI(MQTTTAG, "MQTT starting");
-    esp_mqtt_client_handle_t mqttClient = mqtt_init();
+    esp_mqtt_client_handle_t mqttClient = mqttInit();
     ESP_LOGI(MQTTTAG, "MQTT started");
     esp_mqtt_client_publish(mqttClient, "/idfpye/qos1", "publish", 0, 1, 0);
     esp_mqtt_client_enqueue(mqttClient, "/idfpye/qos1", "enqueue", 0, 1, 0,
