@@ -5,7 +5,6 @@
 #include "freertos/idf_additions.h"
 #include "include/nvStorage.h"
 #include "include/settings.h"
-#include "projdefs.h"
 #include "tinyusb.h"
 #include "tusb_cdc_acm.h"
 #include <stdio.h>

@@ -1,7 +1,10 @@
-#include "mqtt.h"
+#include "include/mqtt.h"
 #include "esp_event_base.h"
 #include "esp_log.h"
-#include "mqtt_client.h"
+#include "include/dht11.h"
+#include "include/settings.h"
+
+static const char *MQTTTAG = "Mqtt status";
 
 static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data) {
@@ -60,10 +63,9 @@ esp_mqtt_client_handle_t mqtt_init(void) {
 
 void mqttTask(void *pvParameter) {
 #define buffSize 100
-  dht_t *dhtStructPtr = (dht_t *)pvParameter;
-  ESP_LOGI(WIFITAG, "ESP_WIFI_MODE_STA");
-  if (wifi_init_sta()) {
-    ESP_LOGI(WIFITAG, "Connected to wifi successfully");
+  settings_t *settingsPtr = (settings_t *)pvParameter;
+  dht_t *dhtStructPtr = settingsPtr->dht;
+  if (wifiInitStation(settingsPtr)) {
     ESP_LOGI(MQTTTAG, "MQTT starting");
     esp_mqtt_client_handle_t mqttClient = mqtt_init();
     ESP_LOGI(MQTTTAG, "MQTT started");
