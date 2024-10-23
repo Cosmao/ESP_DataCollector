@@ -55,7 +55,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
 
 esp_mqtt_client_handle_t mqttInit(void) {
   const esp_mqtt_client_config_t mqtt_conf = {
-      .broker.address.uri = "mqtt://test.mosquitto.org:1883",
+      .broker.address.uri = "mqtt://pajjen.local:1883",
   };
   esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_conf);
   esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler,

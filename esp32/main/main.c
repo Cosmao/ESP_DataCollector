@@ -5,6 +5,7 @@
 #include "freertos/projdefs.h"
 #include "include/dht11.h"
 #include "include/https.h"
+#include "include/mqtt.h"
 #include "include/settings.h"
 #include "include/usb.h"
 #include "include/wifi.h"
@@ -32,7 +33,9 @@ void app_main(void) {
 
   TaskHandle_t httpsHandle = NULL;
   BaseType_t taskRet =
-      xTaskCreate(&httpsTask, "http task", 8192, settingsPtr, 5, &httpsHandle);
+      // xTaskCreate(&httpsTask, "http task", 8192, settingsPtr, 5,
+      // &httpsHandle);
+      xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 5, &httpsHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
     vTaskDelete(httpsHandle);
     ESP_LOGE("HTTP", "Could not allocate memory for task");
