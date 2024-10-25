@@ -8,8 +8,8 @@
 
 #define FIRMWARE_VERSION 0.1
 #define UPDATE_JSON_URL                                                        \
-  "https://github.com/Cosmao/ESP_DataCollector/raw/refs/heads/FOTA/esp32/"     \
-  "build/firmware.json"
+  "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
+  "FOTA/esp32/build/firmware.json"
 
 // receive buffer
 char rcv_buffer[200];
@@ -94,6 +94,7 @@ void check_update_task(void *pvParameter) {
                 esp_http_client_config_t ota_client_config = {
                     .url = file->valuestring,
                     .keep_alive_enable = true,
+                    .crt_bundle_attach = esp_crt_bundle_attach,
                 };
 
                 esp_https_ota_config_t ota_config = {
