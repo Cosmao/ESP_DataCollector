@@ -14,6 +14,10 @@
 // receive buffer
 char rcv_buffer[200];
 
+// TODO: Change to the https more robust event handler
+// clean up code into functions
+// Maybe make it trigger on something? Or just a thread running rarely?
+
 // esp_http_client event handler
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 
