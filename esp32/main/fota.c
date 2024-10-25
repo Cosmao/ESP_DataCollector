@@ -3,8 +3,7 @@
 #define FIRMWARE_VERSION 0.1
 #define UPDATE_JSON_URL                                                        \
   "https://github.com/Cosmao/ESP_DataCollector/raw/refs/heads/FOTA/esp32/"     \
-  "build/ESPTempReader.bin"                                                    \
-  "firmware.json"
+  "build/firmware.json"
 
 // receive buffer
 char rcv_buffer[200];
