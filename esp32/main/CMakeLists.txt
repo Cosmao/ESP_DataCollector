@@ -1,5 +1,5 @@
 idf_component_register(SRCS "main.c" "wifi.c" "dht11.c" "https.c"
-"usb.c" "nvStorage.c" "settings.c" "mqtt.c"
+"usb.c" "nvStorage.c" "settings.c" "mqtt.c" "fota.c"
                     INCLUDE_DIRS "."
                     PRIV_REQUIRES 
                     esp_wifi 
