@@ -49,7 +49,7 @@ void check_update_task(void *pvParameter) {
       char buf[255];
       sprintf(buf, "%s?token=%d", UPDATE_JSON_URL, cnt);
       cnt++;
-      ESP_LOGE("FOTA", "Looking for a new firmware at %s", buf);
+      ESP_LOGI("FOTA", "Looking for a new firmware at %s", buf);
 
       // configure the esp_http_client
       esp_http_client_config_t config = {
@@ -82,27 +82,23 @@ void check_update_task(void *pvParameter) {
             double new_version = version->valuedouble;
             if (new_version > FIRMWARE_VERSION) {
 
-              printf("current firmware version (%.1f) is lower than the "
-                     "available one (%.1f), upgrading...\n",
-                     FIRMWARE_VERSION, new_version);
+              ESP_LOGI("FOTA",
+                       "current firmware version (%.1f) is lower than the "
+                       "available one (%.1f), upgrading...",
+                       FIRMWARE_VERSION, new_version);
               if (cJSON_IsString(file) && (file->valuestring != NULL)) {
-                printf("downloading and installing new firmware (%s)...\n",
-                       file->valuestring);
-
-                printf("esp_http_client\n");
+                ESP_LOGI("FOTA",
+                         "downloading and installing new firmware (%s)...",
+                         file->valuestring);
 
                 esp_http_client_config_t ota_client_config = {
                     .url = file->valuestring,
                     .keep_alive_enable = true,
                 };
 
-                printf("ota_config\n");
-
                 esp_https_ota_config_t ota_config = {
                     .http_config = &ota_client_config,
                 };
-
-                printf("errCheck\n");
 
                 esp_err_t ret = esp_https_ota(&ota_config);
                 if (ret == ESP_OK) {
@@ -112,21 +108,20 @@ void check_update_task(void *pvParameter) {
                   printf("OTA failed...\n");
                 }
               } else
-                printf("unable to read the new file name, aborting...\n");
+                ESP_LOGE("FOTA",
+                         "unable to read the new file name, aborting...");
             } else
-              printf(
-                  "current firmware version (%.1f) is greater or equal to the "
-                  "available one (%.1f), nothing to do...\n",
-                  FIRMWARE_VERSION, new_version);
+              ESP_LOGI("FOTA",
+                       "current firmware version (%.1f) is greater than or "
+                       "equal to the available one (%.1f) nothing to do",
+                       FIRMWARE_VERSION, new_version);
           }
         }
       } else
-        printf("unable to download the json file, aborting...\n");
+        ESP_LOGE("FOTA", "unable to download the json file, aborting...");
 
-      // cleanup
       esp_http_client_cleanup(client);
 
-      printf("\n");
       vTaskDelay(30000 / portTICK_PERIOD_MS);
     }
   }
