@@ -2,5 +2,6 @@
 .cache/
 build/*
 !build/ESPTempReader.bin
+!build/firmware.json
 sdkconfig*
 managed_components/
