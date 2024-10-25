@@ -1,4 +1,10 @@
+#include "cJSON.h"
+#include "esp_crt_bundle.h"
 #include "esp_http_client.h"
+#include "esp_https_ota.h"
+#include "esp_log.h"
+#include "include/settings.h"
+#include "include/wifi.h"
 
 #define FIRMWARE_VERSION 0.1
 #define UPDATE_JSON_URL                                                        \
@@ -32,4 +38,96 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     break;
   }
   return ESP_OK;
+}
+
+void check_update_task(void *pvParameter) {
+  settings_t *settingsPtr = (settings_t *)pvParameter;
+  if (wifiInitStation(settingsPtr)) {
+
+    int cnt = 0;
+    while (1) {
+      char buf[255];
+      sprintf(buf, "%s?token=%d", UPDATE_JSON_URL, cnt);
+      cnt++;
+      ESP_LOGE("FOTA", "Looking for a new firmware at %s", buf);
+
+      // configure the esp_http_client
+      esp_http_client_config_t config = {
+          .url = buf,
+          .event_handler = _http_event_handler,
+          .keep_alive_enable = true,
+          .timeout_ms = 30000,
+          .crt_bundle_attach = esp_crt_bundle_attach,
+      };
+      esp_http_client_handle_t client = esp_http_client_init(&config);
+
+      // downloading the json file
+      esp_err_t err = esp_http_client_perform(client);
+      if (err == ESP_OK) {
+
+        // parse the json file
+        cJSON *json = cJSON_Parse(rcv_buffer);
+        if (json == NULL)
+          ESP_LOGE("FOTA",
+                   "downloaded file is not a valid json, aborting...\n");
+        else {
+          cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
+          cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
+
+          // check the version
+          if (!cJSON_IsNumber(version))
+            ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
+          else {
+
+            double new_version = version->valuedouble;
+            if (new_version > FIRMWARE_VERSION) {
+
+              printf("current firmware version (%.1f) is lower than the "
+                     "available one (%.1f), upgrading...\n",
+                     FIRMWARE_VERSION, new_version);
+              if (cJSON_IsString(file) && (file->valuestring != NULL)) {
+                printf("downloading and installing new firmware (%s)...\n",
+                       file->valuestring);
+
+                printf("esp_http_client\n");
+
+                esp_http_client_config_t ota_client_config = {
+                    .url = file->valuestring,
+                    .keep_alive_enable = true,
+                };
+
+                printf("ota_config\n");
+
+                esp_https_ota_config_t ota_config = {
+                    .http_config = &ota_client_config,
+                };
+
+                printf("errCheck\n");
+
+                esp_err_t ret = esp_https_ota(&ota_config);
+                if (ret == ESP_OK) {
+                  printf("OTA OK, restarting...\n");
+                  esp_restart();
+                } else {
+                  printf("OTA failed...\n");
+                }
+              } else
+                printf("unable to read the new file name, aborting...\n");
+            } else
+              printf(
+                  "current firmware version (%.1f) is greater or equal to the "
+                  "available one (%.1f), nothing to do...\n",
+                  FIRMWARE_VERSION, new_version);
+          }
+        }
+      } else
+        printf("unable to download the json file, aborting...\n");
+
+      // cleanup
+      esp_http_client_cleanup(client);
+
+      printf("\n");
+      vTaskDelay(30000 / portTICK_PERIOD_MS);
+    }
+  }
 }
