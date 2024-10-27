@@ -116,7 +116,7 @@ static esp_err_t preformOTA(const char *url) {
 
   esp_err_t ret = esp_https_ota(&ota_config);
   if (ret == ESP_OK) {
-    ESP_LOGI("FOTA", "OTA successful, restarting");
+    ESP_LOGW("FOTA", "OTA successful, restarting");
     esp_restart();
   } else {
     ESP_LOGE("FOTA", "FOTA failed!");
