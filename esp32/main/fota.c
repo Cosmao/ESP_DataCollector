@@ -9,7 +9,7 @@
 #include "include/wifi.h"
 #include <stdio.h>
 
-#define FIRMWARE_VERSION 1
+#define FIRMWARE_VERSION 2
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "FOTA/esp32/build/firmware.json"
