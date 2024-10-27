@@ -8,11 +8,12 @@
 #include "include/settings.h"
 #include "include/wifi.h"
 #include <stdio.h>
+#include <string.h>
 
 #define FIRMWARE_VERSION 4
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
-  "FOTA/esp32/build/firmware.json"
+  "main/esp32/build/firmware.json"
 
 // receive buffer
 char rcv_buffer[200];
@@ -128,6 +129,7 @@ static esp_err_t preformOTA(const char *url) {
 
 void checkForFOTA(void) {
 #define buffSize 255
+  memset(rcv_buffer, '\0', sizeof(rcv_buffer));
   esp_http_client_handle_t client;
   buildHttpClient(&client);
 
