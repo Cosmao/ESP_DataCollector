@@ -108,7 +108,7 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
 static esp_err_t preformOTA(const char *url) {
   esp_http_client_config_t ota_client_config = {
       .url = url,
-      .keep_alive_enable = true,
+      .keep_alive_enable = false,
       .crt_bundle_attach = esp_crt_bundle_attach,
   };
 
@@ -134,11 +134,13 @@ void checkForFOTA(void) {
   esp_err_t err = esp_http_client_perform(client);
   if (err != ESP_OK) {
     ESP_LOGE("FOTA", "Error downloading the json");
+    esp_http_client_cleanup(client);
     return;
   }
 
   char buff[buffSize];
-  if (parseJSON(buff, buffSize) != 0) {
+  if (parseJSON(buff, buffSize) != FOTA_OK) {
+    esp_http_client_cleanup(client);
     return;
   }
 
