@@ -1,12 +1,14 @@
 #include "cJSON.h"
 #include "esp_crt_bundle.h"
+#include "esp_err.h"
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
 #include "include/settings.h"
 #include "include/wifi.h"
+#include <stdio.h>
 
-#define FIRMWARE_VERSION 0.1
+#define FIRMWARE_VERSION 1
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "FOTA/esp32/build/firmware.json"
@@ -44,17 +46,33 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
+static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
+#define buffLen 255
+  char buff[buffLen];
+  snprintf(buff, buffLen, "%s", UPDATE_JSON_URL);
+  esp_http_client_config_t config = {
+      .url = buff,
+      .event_handler = _http_event_handler,
+      .keep_alive_enable = true,
+      .timeout_ms = 30000,
+      .crt_bundle_attach = esp_crt_bundle_attach,
+  };
+  *client = esp_http_client_init(&config);
+  return ESP_OK;
+}
+
 void check_update_task(void *pvParameter) {
   settings_t *settingsPtr = (settings_t *)pvParameter;
   if (wifiInitStation(settingsPtr)) {
 
     int cnt = 0;
     while (1) {
+
+      /*
       char buf[255];
       sprintf(buf, "%s?token=%d", UPDATE_JSON_URL, cnt);
       cnt++;
       ESP_LOGI("FOTA", "Looking for a new firmware at %s", buf);
-
       // configure the esp_http_client
       esp_http_client_config_t config = {
           .url = buf,
@@ -64,6 +82,9 @@ void check_update_task(void *pvParameter) {
           .crt_bundle_attach = esp_crt_bundle_attach,
       };
       esp_http_client_handle_t client = esp_http_client_init(&config);
+      */
+      esp_http_client_handle_t client;
+      buildHttpClient(&client);
 
       // downloading the json file
       esp_err_t err = esp_http_client_perform(client);
@@ -83,12 +104,12 @@ void check_update_task(void *pvParameter) {
             ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
           else {
 
-            double new_version = version->valuedouble;
+            int new_version = version->valuedouble;
             if (new_version > FIRMWARE_VERSION) {
 
               ESP_LOGI("FOTA",
-                       "current firmware version (%.1f) is lower than the "
-                       "available one (%.1f), upgrading...",
+                       "current firmware version (%d) is lower than the "
+                       "available one (%d), upgrading...",
                        FIRMWARE_VERSION, new_version);
               if (cJSON_IsString(file) && (file->valuestring != NULL)) {
                 ESP_LOGI("FOTA",
@@ -117,8 +138,8 @@ void check_update_task(void *pvParameter) {
                          "unable to read the new file name, aborting...");
             } else
               ESP_LOGI("FOTA",
-                       "current firmware version (%.1f) is greater than or "
-                       "equal to the available one (%.1f) nothing to do",
+                       "current firmware version (%d) is greater than or "
+                       "equal to the available one (%d) nothing to do",
                        FIRMWARE_VERSION, new_version);
           }
         }
