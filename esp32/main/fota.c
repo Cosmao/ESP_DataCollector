@@ -9,7 +9,7 @@
 #include "include/wifi.h"
 #include <stdio.h>
 
-#define FIRMWARE_VERSION 3
+#define FIRMWARE_VERSION 4
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "FOTA/esp32/build/firmware.json"
@@ -68,14 +68,12 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   ESP_LOGI("FOTA", "%s", rcv_buffer);
   if (json == NULL) {
     ESP_LOGE("FOTA", "downloaded file is not a valid json, aborting...\n");
-    cJSON_Delete(json);
     cJSON_free(json);
     return FOTA_JSON_NO_JSON;
   }
   cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
   if (!cJSON_IsNumber(version)) {
     ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
-    cJSON_Delete(json);
     cJSON_free(json);
     return FOTA_JSON_NO_VERSION;
   }
@@ -86,7 +84,6 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
              "current firmware version (%d) is greater than or "
              "equal to the available one (%d) nothing to do",
              FIRMWARE_VERSION, newVersion);
-    cJSON_Delete(json);
     cJSON_free(json);
     return FOTA_JSON_SAME_VERSION;
   }
@@ -98,14 +95,12 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
   if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
     ESP_LOGE("FOTA", "Error reading fota URI");
-    cJSON_Delete(json);
     cJSON_free(json);
     return FOTA_JSON_URL_ERROR;
   }
   ESP_LOGI("FOTA", "downloading and installing new firmware (%s)...",
            file->valuestring);
   snprintf(firmwareURI, buffSize, "%s", file->valuestring);
-  cJSON_Delete(json);
   cJSON_free(json);
   return 0;
 }
