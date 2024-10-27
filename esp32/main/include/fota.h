@@ -1,7 +1,6 @@
 #ifndef fota__h
 #define fota__h
 
-void check_update_task(void *pvParameter);
 void checkForFOTA(void);
 
 typedef enum fota_err_t {

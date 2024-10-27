@@ -5,12 +5,11 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
-#include "include/settings.h"
 #include "include/wifi.h"
 #include <stdio.h>
 #include <string.h>
 
-#define FIRMWARE_VERSION 4
+#define FIRMWARE_VERSION 5
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "main/esp32/build/firmware.json"
@@ -55,8 +54,6 @@ static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
   esp_http_client_config_t config = {
       .url = buff,
       .event_handler = _http_event_handler,
-      .keep_alive_enable = true,
-      .timeout_ms = 30000,
       .crt_bundle_attach = esp_crt_bundle_attach,
   };
   *client = esp_http_client_init(&config);
@@ -148,33 +145,4 @@ void checkForFOTA(void) {
 
   preformOTA(buff);
   esp_http_client_cleanup(client);
-}
-
-void check_update_task(void *pvParameter) {
-#define buffSize 255
-  settings_t *settingsPtr = (settings_t *)pvParameter;
-  if (wifiInitStation(settingsPtr)) {
-
-    while (1) {
-      esp_http_client_handle_t client;
-      buildHttpClient(&client);
-
-      // downloading the json file
-      esp_err_t err = esp_http_client_perform(client);
-      if (err != ESP_OK) {
-        ESP_LOGE("FOTA", "Error downloading the json");
-        // TODO: Return here when not a loop
-      }
-
-      char buff[buffSize];
-      if (parseJSON(buff, buffSize) != 0) {
-        // TODO: Return when not a loop
-      }
-
-      preformOTA(buff);
-
-      esp_http_client_cleanup(client);
-    }
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
-  }
 }

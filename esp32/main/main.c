@@ -4,8 +4,6 @@
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
 #include "include/dht11.h"
-#include "include/fota.h"
-#include "include/https.h"
 #include "include/mqtt.h"
 #include "include/settings.h"
 #include "include/usb.h"
@@ -34,18 +32,12 @@ void app_main(void) {
 
   TaskHandle_t mqttHandle = NULL;
   BaseType_t taskRet =
-      // xTaskCreate(&httpsTask, "http task", 8192, settingsPtr, 5,
-      // &httpsHandle);
       xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 5, &mqttHandle);
-  //    xTaskCreate(&check_update_task, "OTA task", 8192, settingsPtr, 5,
-  //)               &httpsHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
     vTaskDelete(mqttHandle);
     ESP_LOGE("HTTP", "Could not allocate memory for task");
     esp_restart();
   }
-
-  return;
 
   TaskHandle_t dhtHandle = NULL;
   taskRet =
