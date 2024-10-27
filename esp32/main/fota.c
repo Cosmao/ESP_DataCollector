@@ -89,6 +89,7 @@ void check_update_task(void *pvParameter) {
       // downloading the json file
       esp_err_t err = esp_http_client_perform(client);
       if (err == ESP_OK) {
+        ESP_LOGI("FOTA", "%s", rcv_buffer);
 
         // parse the json file
         cJSON *json = cJSON_Parse(rcv_buffer);
