@@ -1,3 +1,4 @@
+#include "include/fota.h"
 #include "cJSON.h"
 #include "esp_crt_bundle.h"
 #include "esp_err.h"
@@ -61,95 +62,110 @@ static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
   return ESP_OK;
 }
 
+// TODO: Fix a new return enum
+static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
+  cJSON *json = cJSON_Parse(rcv_buffer);
+  ESP_LOGI("FOTA", "%s", rcv_buffer);
+  if (json == NULL) {
+    ESP_LOGE("FOTA", "downloaded file is not a valid json, aborting...\n");
+    return FOTA_JSON_NO_JSON;
+  }
+  cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
+  if (!cJSON_IsNumber(version)) {
+    ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
+    return FOTA_JSON_NO_VERSION;
+  }
+
+  int newVersion = version->valueint;
+  if (!(newVersion > FIRMWARE_VERSION)) {
+    ESP_LOGI("FOTA",
+             "current firmware version (%d) is greater than or "
+             "equal to the available one (%d) nothing to do",
+             FIRMWARE_VERSION, newVersion);
+    return FOTA_JSON_SAME_VERSION;
+  }
+  ESP_LOGI("FOTA",
+           "current firmware version (%d) is lower than the "
+           "available one (%d), upgrading...",
+           FIRMWARE_VERSION, newVersion);
+
+  cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
+  if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
+    ESP_LOGE("FOTA", "Error reading fota URI");
+    return FOTA_JSON_URL_ERROR;
+  }
+  ESP_LOGI("FOTA", "downloading and installing new firmware (%s)...",
+           file->valuestring);
+  snprintf(firmwareURI, buffSize, "%s", file->valuestring);
+  return 0;
+}
+
+static esp_err_t preformOTA(const char *url) {
+  esp_http_client_config_t ota_client_config = {
+      .url = url,
+      .keep_alive_enable = true,
+      .crt_bundle_attach = esp_crt_bundle_attach,
+  };
+
+  esp_https_ota_config_t ota_config = {
+      .http_config = &ota_client_config,
+  };
+
+  esp_err_t ret = esp_https_ota(&ota_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI("FOTA", "OTA successful, restarting");
+    esp_restart();
+  } else {
+    ESP_LOGE("FOTA", "FOTA failed!");
+    return ret;
+  }
+}
+
+void checkForFOTA(void) {
+#define buffSize 255
+  esp_http_client_handle_t client;
+  buildHttpClient(&client);
+
+  esp_err_t err = esp_http_client_perform(client);
+  if (err != ESP_OK) {
+    ESP_LOGE("FOTA", "Error downloading the json");
+    return;
+  }
+
+  char buff[buffSize];
+  if (parseJSON(buff, buffSize) != 0) {
+    return;
+  }
+
+  preformOTA(buff);
+  esp_http_client_cleanup(client);
+}
+
 void check_update_task(void *pvParameter) {
+#define buffSize 255
   settings_t *settingsPtr = (settings_t *)pvParameter;
   if (wifiInitStation(settingsPtr)) {
 
-    int cnt = 0;
     while (1) {
-
-      /*
-      char buf[255];
-      sprintf(buf, "%s?token=%d", UPDATE_JSON_URL, cnt);
-      cnt++;
-      ESP_LOGI("FOTA", "Looking for a new firmware at %s", buf);
-      // configure the esp_http_client
-      esp_http_client_config_t config = {
-          .url = buf,
-          .event_handler = _http_event_handler,
-          .keep_alive_enable = true,
-          .timeout_ms = 30000,
-          .crt_bundle_attach = esp_crt_bundle_attach,
-      };
-      esp_http_client_handle_t client = esp_http_client_init(&config);
-      */
       esp_http_client_handle_t client;
       buildHttpClient(&client);
 
       // downloading the json file
       esp_err_t err = esp_http_client_perform(client);
-      if (err == ESP_OK) {
-        ESP_LOGI("FOTA", "%s", rcv_buffer);
+      if (err != ESP_OK) {
+        ESP_LOGE("FOTA", "Error downloading the json");
+        // TODO: Return here when not a loop
+      }
 
-        // parse the json file
-        cJSON *json = cJSON_Parse(rcv_buffer);
-        if (json == NULL)
-          ESP_LOGE("FOTA",
-                   "downloaded file is not a valid json, aborting...\n");
-        else {
-          cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
-          cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
+      char buff[buffSize];
+      if (parseJSON(buff, buffSize) != 0) {
+        // TODO: Return when not a loop
+      }
 
-          // check the version
-          if (!cJSON_IsNumber(version))
-            ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
-          else {
-
-            int new_version = version->valuedouble;
-            if (new_version > FIRMWARE_VERSION) {
-
-              ESP_LOGI("FOTA",
-                       "current firmware version (%d) is lower than the "
-                       "available one (%d), upgrading...",
-                       FIRMWARE_VERSION, new_version);
-              if (cJSON_IsString(file) && (file->valuestring != NULL)) {
-                ESP_LOGI("FOTA",
-                         "downloading and installing new firmware (%s)...",
-                         file->valuestring);
-
-                esp_http_client_config_t ota_client_config = {
-                    .url = file->valuestring,
-                    .keep_alive_enable = true,
-                    .crt_bundle_attach = esp_crt_bundle_attach,
-                };
-
-                esp_https_ota_config_t ota_config = {
-                    .http_config = &ota_client_config,
-                };
-
-                esp_err_t ret = esp_https_ota(&ota_config);
-                if (ret == ESP_OK) {
-                  printf("OTA OK, restarting...\n");
-                  esp_restart();
-                } else {
-                  printf("OTA failed...\n");
-                }
-              } else
-                ESP_LOGE("FOTA",
-                         "unable to read the new file name, aborting...");
-            } else
-              ESP_LOGI("FOTA",
-                       "current firmware version (%d) is greater than or "
-                       "equal to the available one (%d) nothing to do",
-                       FIRMWARE_VERSION, new_version);
-          }
-        }
-      } else
-        ESP_LOGE("FOTA", "unable to download the json file, aborting...");
+      preformOTA(buff);
 
       esp_http_client_cleanup(client);
-
-      vTaskDelay(30000 / portTICK_PERIOD_MS);
     }
+    vTaskDelay(30000 / portTICK_PERIOD_MS);
   }
 }

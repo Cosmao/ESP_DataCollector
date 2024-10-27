@@ -32,16 +32,15 @@ void app_main(void) {
 
   settingsPtr->dht = dhtStructPtr;
 
-  TaskHandle_t httpsHandle = NULL;
+  TaskHandle_t mqttHandle = NULL;
   BaseType_t taskRet =
       // xTaskCreate(&httpsTask, "http task", 8192, settingsPtr, 5,
       // &httpsHandle);
-      // xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 5,
-      // &httpsHandle);
-      xTaskCreate(&check_update_task, "OTA task", 8192, settingsPtr, 5,
-                  &httpsHandle);
+      xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 5, &mqttHandle);
+  //    xTaskCreate(&check_update_task, "OTA task", 8192, settingsPtr, 5,
+  //)               &httpsHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
-    vTaskDelete(httpsHandle);
+    vTaskDelete(mqttHandle);
     ESP_LOGE("HTTP", "Could not allocate memory for task");
     esp_restart();
   }
