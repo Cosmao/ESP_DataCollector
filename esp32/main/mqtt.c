@@ -17,25 +17,19 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
   esp_mqtt_client_handle_t client = event->client;
   switch (event_id) {
   case MQTT_EVENT_CONNECTED: {
-    ESP_LOGI(MQTTTAG, "connected to MQTT");
     esp_mqtt_client_subscribe(client, "/idfpye/qos1", 1);
-    ESP_LOGI(MQTTTAG, "subscribing");
     break;
   }
   case MQTT_EVENT_DISCONNECTED: {
-    ESP_LOGI(MQTTTAG, "disconnected from MQTT");
     break;
   }
   case MQTT_EVENT_SUBSCRIBED: {
-    ESP_LOGI(MQTTTAG, "subscribed successfully");
     break;
   }
   case MQTT_EVENT_PUBLISHED: {
-    ESP_LOGI(MQTTTAG, "message published successfully");
     break;
   }
   case MQTT_EVENT_DATA: {
-    ESP_LOGI(MQTTTAG, "Got data from MQTT");
     printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
     printf("DATA=%.*s\r\n", event->data_len, event->data);
     break;

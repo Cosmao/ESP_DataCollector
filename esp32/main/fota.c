@@ -63,7 +63,6 @@ static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
 // TODO: Fix a new return enum
 static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   cJSON *json = cJSON_Parse(rcv_buffer);
-  ESP_LOGI("FOTA", "%s", rcv_buffer);
   if (json == NULL) {
     ESP_LOGE("FOTA", "downloaded file is not a valid json, aborting...\n");
     cJSON_free(json);
@@ -78,17 +77,9 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
 
   int newVersion = version->valueint;
   if (!(newVersion > FIRMWARE_VERSION)) {
-    ESP_LOGI("FOTA",
-             "current firmware version (%d) is greater than or "
-             "equal to the available one (%d) nothing to do",
-             FIRMWARE_VERSION, newVersion);
     cJSON_free(json);
     return FOTA_JSON_SAME_VERSION;
   }
-  ESP_LOGI("FOTA",
-           "current firmware version (%d) is lower than the "
-           "available one (%d), upgrading...",
-           FIRMWARE_VERSION, newVersion);
 
   cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
   if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
@@ -96,8 +87,6 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
     cJSON_free(json);
     return FOTA_JSON_URL_ERROR;
   }
-  ESP_LOGI("FOTA", "downloading and installing new firmware (%s)...",
-           file->valuestring);
   snprintf(firmwareURI, buffSize, "%s", file->valuestring);
   cJSON_free(json);
   return 0;
@@ -116,7 +105,6 @@ static esp_err_t preformOTA(const char *url) {
 
   esp_err_t ret = esp_https_ota(&ota_config);
   if (ret == ESP_OK) {
-    ESP_LOGI("FOTA", "OTA successful, restarting");
     esp_restart();
   } else {
     ESP_LOGE("FOTA", "FOTA failed!");

@@ -118,7 +118,6 @@ void dhtTask(void *pvParameter) {
       ESP_LOGE(DHTTAG, "Unk error in dht");
       break;
     case DHT_READ_TOO_EARLY:
-      ESP_LOGI(DHTTAG, "Read too early, using old values");
       break;
     case DHT_CHECKSUM_FAIL:
       ESP_LOGE(DHTTAG, "Checksum error");

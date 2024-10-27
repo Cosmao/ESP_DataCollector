@@ -26,11 +26,11 @@ esp_err_t nvsCommit(const char *key, char *buffer) {
   if (ret == ESP_OK) {
     ret = nvs_set_str(nvsHandle, key, buffer);
     if (ret != ESP_OK) {
-      ESP_LOGI("NVS", "%s set failed", key);
+      ESP_LOGE("NVS", "%s set failed", key);
     }
     ret = nvs_commit(nvsHandle);
     if (ret != ESP_OK) {
-      ESP_LOGI("NVS", "commit failed");
+      ESP_LOGE("NVS", "commit failed");
       nvs_close(nvsHandle);
       return ret;
     }
@@ -61,7 +61,7 @@ void nvsReadErrCheck(esp_err_t ret) {
   case ESP_OK:
     return;
   case ESP_ERR_NVS_NOT_FOUND:
-    ESP_LOGI("NVS", "Key not found");
+    ESP_LOGE("NVS", "Key not found");
     break;
   case ESP_ERR_NVS_INVALID_HANDLE:
     ESP_LOGE("NVS", "Invalid handle");
