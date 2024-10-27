@@ -1,5 +1,7 @@
 #Esp32 build files
 .cache/
-build/
+build/*
+!build/ESPTempReader.bin
+!build/firmware.json
 sdkconfig*
 managed_components/

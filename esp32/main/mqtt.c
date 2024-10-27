@@ -2,6 +2,7 @@
 #include "esp_event_base.h"
 #include "esp_log.h"
 #include "include/dht11.h"
+#include "include/fota.h"
 #include "include/settings.h"
 
 // TODO: Add mTLS or something similar, subscribe to topic for new firmware
@@ -77,11 +78,13 @@ void mqttTask(void *pvParameter) {
                             false);
     char buff[buffSize];
     while (true) {
+      checkForFOTA();
       snprintf(buff, buffSize, "{ \"Temperature\":%d.%d, \"Humidity\":%d.%d }",
                dhtStructPtr->temperature.integer,
                dhtStructPtr->temperature.decimal,
                dhtStructPtr->humidity.integer, dhtStructPtr->humidity.decimal);
       esp_mqtt_client_enqueue(mqttClient, "/idfpye/qos1", buff, 0, 1, 0, false);
+
       vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
   }
