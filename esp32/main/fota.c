@@ -68,7 +68,7 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
     cJSON_free(json);
     return FOTA_JSON_NO_JSON;
   }
-  cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
+  const cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
   if (!cJSON_IsNumber(version)) {
     ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
     cJSON_free(json);
@@ -81,7 +81,7 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
     return FOTA_JSON_SAME_VERSION;
   }
 
-  cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
+  const cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
   if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
     ESP_LOGE("FOTA", "Error reading fota URI");
     cJSON_free(json);

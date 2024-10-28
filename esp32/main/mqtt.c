@@ -81,7 +81,7 @@ void mqttTask(void *pvParameter) {
     esp_mqtt_client_handle_t mqttClient = mqttInit();
     char buff[buffSize];
     while (true) {
-      // checkForFOTA();
+      checkForFOTA();
       snprintf(buff, buffSize, "{ \"Temperature\":%d.%d, \"Humidity\":%d.%d }",
                dhtStructPtr->temperature.integer,
                dhtStructPtr->temperature.decimal,
