@@ -9,7 +9,7 @@ services:
       - "8883:8883"
     restart: always
 
-influxdb2:
+  influxdb2:
     image: influxdb:2
     ports:
       - 8086:8086
@@ -49,27 +49,28 @@ influxdb2:
     container_name: mqtt_consumer
     depends_on:
       - mosquitto
-      - influxdb
+      - influxdb2
     secrets:
       - influxdb2-admin-token
     environment:
-      - MQTT_BROKER=mosquitto
-      - MQTT_PORT=8883
-      - INFLUXDB_HOST=influxdb
-      - INFLUXDB_PORT=8086
-      - INFLUXDB_DB=buckit
-      - INFLUXDB_TOKEN: /run/secrets/influxdb2-admin-token
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 8883
+      INFLUXDB_HOST: influxdb
+      INFLUXDB_PORT: 8086
+      INFLUXDB_DB: buckit
+      INFLUXDB_TOKEN: /run/secrets/influxdb2-admin-token
     volumes:
       - ./certs:/certs
     restart: always
 
 secrets:
   influxdb2-admin-username:
-    file: ~/.env.influxdb2-admin-username
+    file: ./.env.influxdb2-admin-username
   influxdb2-admin-password:
-    file: ~/.env.influxdb2-admin-password
+    file: ./.env.influxdb2-admin-password
   influxdb2-admin-token:
-    file: ~/.env.influxdb2-admin-token
+    file: ./.env.influxdb2-admin-token
+
 volumes:
   influxdb2-data:
   influxdb2-config:

@@ -2,6 +2,7 @@
 #include "esp_event_base.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "freertos/idf_additions.h"
 #include "include/dht11.h"
 #include "include/fota.h"
 #include "include/settings.h"
@@ -99,4 +100,6 @@ void mqttTask(void *pvParameter) {
       vTaskDelay(20000 / portTICK_PERIOD_MS);
     }
   }
+  ESP_LOGE("WIFI", "Wifi failed to connect");
+  vTaskDelete(NULL);
 }
