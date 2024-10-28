@@ -24,6 +24,10 @@ dht_err_t dhtInit(dht_t *dht) {
   }
   dht->gpio = GPIO_NUM_7;
   dht->lastRead = -2000000;
+  dht->temperature.decimal = 0;
+  dht->temperature.integer = 0;
+  dht->humidity.integer = 0;
+  dht->humidity.decimal = 0;
   return ESP_OK;
 }
 

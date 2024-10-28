@@ -1,6 +1,7 @@
 #include "include/mqtt.h"
 #include "esp_event_base.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "include/dht11.h"
 #include "include/fota.h"
 #include "include/settings.h"
@@ -70,7 +71,9 @@ void mqttTask(void *pvParameter) {
 #define buffSize 100
   settings_t *settingsPtr = (settings_t *)pvParameter;
   dht_t *dhtStructPtr = settingsPtr->dht;
+  int freeHeap = (int)esp_get_free_heap_size();
   if (wifiInitStation(settingsPtr)) {
+    ESP_LOGI("WIFI", "CONNECTED");
     esp_mqtt_client_handle_t mqttClient = mqttInit();
     char buff[buffSize];
     while (true) {
@@ -80,6 +83,11 @@ void mqttTask(void *pvParameter) {
                dhtStructPtr->temperature.decimal,
                dhtStructPtr->humidity.integer, dhtStructPtr->humidity.decimal);
       esp_mqtt_client_enqueue(mqttClient, "/idfpye/qos1", buff, 0, 1, 0, false);
+
+      int newFreeHeap = (int)esp_get_free_heap_size();
+      ESP_LOGI("HEAP", "Free heap: %d, %d less than last loop", newFreeHeap,
+               freeHeap - newFreeHeap);
+      freeHeap = newFreeHeap;
 
       vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
