@@ -46,7 +46,7 @@ fi
 idf.py size
 
 while true; do
-  read -p "Flash a ESP? (y/n) " doFlash 
+  read -p "Flash ESP? (y/n) " doFlash 
   case $doFlash in
     [yY] ) flashESP;
       break;;
