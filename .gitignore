@@ -20,3 +20,6 @@ compile_commands.json
 
 # mosquitto log
 backend/certs/mosquitto.log
+
+# secrets
+backend/.env.influxdb2*
