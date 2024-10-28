@@ -3,6 +3,7 @@
 - Om tid finns, FIXA USB SKITEN
 
 ### How to use
+Firstly generate all the keys requried by running the keyGen bash script \
 Compile or flash the ESP code \
 Docker stuff in this order \
 ```docker-compose up -d influxdb``` \
