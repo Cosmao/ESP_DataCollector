@@ -10,15 +10,17 @@ MQTT_PORT = int(os.getenv('MQTT_PORT', 8883))
 INFLUXDB_HOST = os.getenv('INFLUXDB_HOST', 'localhost')
 INFLUXDB_PORT = int(os.getenv('INFLUXDB_PORT', 8086))
 INFLUXDB_DB = os.getenv('INFLUXDB_DB', 'buckit')
-INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN')  
+INFLUXDB_TOKEN_LOCATION = os.getenv('INFLUXDB_TOKEN')  
+file = open(INFLUXDB_TOKEN_LOCATION, "r")
+line = file.read()
+INFLUXDB_TOKEN = line.strip()
+file.close()
 MQTT_TOPIC = os.getenv('MQTT_TOPIC', 'sensors/#')  # Subscribe to all topics under "sensors/"
 
 # Certificate paths
 CA_CERT = '/certs/ca.crt'
 CLIENT_CERT = '/certs/mqttConsumer.crt'
 CLIENT_KEY = '/certs/mqttConsumer.key'
-
-print("Started")
 
 # Connect to InfluxDB
 influx_client = InfluxDBClient(
