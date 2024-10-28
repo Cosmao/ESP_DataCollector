@@ -55,7 +55,7 @@ services:
     environment:
       MQTT_BROKER: mosquitto
       MQTT_PORT: 8883
-      INFLUXDB_HOST: influxdb
+      INFLUXDB_HOST: influxdb2
       INFLUXDB_PORT: 8086
       INFLUXDB_DB: buckit
       INFLUXDB_TOKEN: /run/secrets/influxdb2-admin-token
