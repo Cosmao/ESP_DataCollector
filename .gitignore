@@ -11,3 +11,8 @@ id_rsa.pub
 # clangD
 .cache/
 compile_commands.json
+
+# Keys
+backend/certs/*
+esp32/main/*.crt
+esp32/main/*.key

@@ -1,4 +1,4 @@
-cd backend/mqttDocker/certs
+cd backend/certs
 
 # Generate server key
 openssl genrsa -out server.key 2048
@@ -16,6 +16,6 @@ openssl req -new -key client.key -out client.csr -subj "/C=SE/O=iot23/CN=localho
 openssl x509 -req -in client.csr -CA ca.crt -CAkey server.key -CAcreateserial -out client.crt -days 3650
 
 # copy to the ESP dir
-cp ca.crt ../../../esp32/main/
-cp client.crt ../../../esp32/main/
-cp client.key ../../../esp32/main/
+cp ca.crt ../../esp32/main/
+cp client.crt ../../esp32/main/
+cp client.key ../../esp32/main/
