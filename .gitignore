@@ -13,6 +13,10 @@ id_rsa.pub
 compile_commands.json
 
 # Keys
-backend/certs/*
-esp32/main/*.crt
-esp32/main/*.key
+*.crt
+*.key
+*.srl
+*.csr
+
+# mosquitto log
+backend/certs/mosquitto.log
