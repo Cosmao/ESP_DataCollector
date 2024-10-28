@@ -96,7 +96,7 @@ void mqttTask(void *pvParameter) {
                freeHeap - newFreeHeap);
       freeHeap = newFreeHeap;
 
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      vTaskDelay(20000 / portTICK_PERIOD_MS);
     }
   }
 }
