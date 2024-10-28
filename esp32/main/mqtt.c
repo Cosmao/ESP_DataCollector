@@ -7,6 +7,8 @@
 #include "include/settings.h"
 #include "mqtt_client.h"
 
+const char *topic = "sensors/esp/";
+
 // TODO: Add mTLS or something similar, subscribe to topic for new firmware
 // updates and start a https update then
 
@@ -25,7 +27,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
   esp_mqtt_client_handle_t client = event->client;
   switch (event_id) {
   case MQTT_EVENT_CONNECTED: {
-    esp_mqtt_client_subscribe(client, "/idfpye/qos1", 1);
+    esp_mqtt_client_subscribe(client, topic, 1);
     break;
   }
   case MQTT_EVENT_DISCONNECTED: {
@@ -77,7 +79,7 @@ static esp_mqtt_client_handle_t mqttInit(void) {
 void mqttTask(void *pvParameter) {
 #define buffSize 100
   settings_t *settingsPtr = (settings_t *)pvParameter;
-  dht_t *dhtStructPtr = settingsPtr->dht;
+  dht_t *dht = settingsPtr->dht;
   int freeHeap = (int)esp_get_free_heap_size();
   if (wifiInitStation(settingsPtr)) {
     ESP_LOGI("WIFI", "CONNECTED");
@@ -85,11 +87,9 @@ void mqttTask(void *pvParameter) {
     char buff[buffSize];
     while (true) {
       checkForFOTA();
-      snprintf(buff, buffSize, "{ \"Temperature\":%d.%d, \"Humidity\":%d.%d }",
-               dhtStructPtr->temperature.integer,
-               dhtStructPtr->temperature.decimal,
-               dhtStructPtr->humidity.integer, dhtStructPtr->humidity.decimal);
-      esp_mqtt_client_enqueue(mqttClient, "/idfpye/qos1", buff, 0, 1, 0, false);
+      snprintf(buff, buffSize, "{\"temperature\":%.1f,\"humidity\":%.1f}",
+               getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
+      esp_mqtt_client_enqueue(mqttClient, topic, buff, 0, 1, 0, false);
 
       int newFreeHeap = (int)esp_get_free_heap_size();
       ESP_LOGI("HEAP", "Free heap: %d, %d less than last loop", newFreeHeap,

@@ -11,3 +11,12 @@ id_rsa.pub
 # clangD
 .cache/
 compile_commands.json
+
+# Keys
+*.crt
+*.key
+*.srl
+*.csr
+
+# mosquitto log
+backend/certs/mosquitto.log
