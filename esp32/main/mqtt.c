@@ -25,7 +25,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
   esp_mqtt_client_handle_t client = event->client;
   switch (event_id) {
   case MQTT_EVENT_CONNECTED: {
-    esp_mqtt_client_subscribe(client, "/idfpye/qos1", 1);
+    esp_mqtt_client_subscribe(client, "sensors/esp/", 1);
     break;
   }
   case MQTT_EVENT_DISCONNECTED: {
@@ -89,7 +89,7 @@ void mqttTask(void *pvParameter) {
                dhtStructPtr->temperature.integer,
                dhtStructPtr->temperature.decimal,
                dhtStructPtr->humidity.integer, dhtStructPtr->humidity.decimal);
-      esp_mqtt_client_enqueue(mqttClient, "/idfpye/qos1", buff, 0, 1, 0, false);
+      esp_mqtt_client_enqueue(mqttClient, "sensor/esp/", buff, 0, 1, 0, false);
 
       int newFreeHeap = (int)esp_get_free_heap_size();
       ESP_LOGI("HEAP", "Free heap: %d, %d less than last loop", newFreeHeap,

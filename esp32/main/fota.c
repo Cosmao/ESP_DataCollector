@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define FIRMWARE_VERSION 5
+#define FIRMWARE_VERSION 6
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "main/esp32/build/firmware.json"

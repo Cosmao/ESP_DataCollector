@@ -8,12 +8,15 @@ openssl req -new -x509 -days 3650 -key server.key -out ca.crt -subj "/C=SE/O=iot
 
 # Generate client key
 openssl genrsa -out client.key 2048
+openssl genrsa -out mqttConsumer.key 2048
 
 # Create client certificate signing request with country and organization
 openssl req -new -key client.key -out client.csr -subj "/C=SE/O=iot23/CN=localhost"
+openssl req -new -key mqttConsumer.key -out mqttConsumer.csr -subj "/C=SE/O=iot23/CN=localhost"
 
 # Sign the client certificate with the CA certificate
 openssl x509 -req -in client.csr -CA ca.crt -CAkey server.key -CAcreateserial -out client.crt -days 3650
+openssl x509 -req -in mqttConsumer.csr -CA ca.crt -CAkey server.key -CAcreateserial -out mqttConsumer.crt -days 3650
 
 # copy to the ESP dir
 cp ca.crt ../../esp32/main/
