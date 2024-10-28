@@ -65,7 +65,6 @@ static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
 // TODO: Fix a new return enum
 static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   cJSON *json = cJSON_Parse(rcv_buffer);
-  ESP_LOGI("FOTA", "%s", rcv_buffer);
   if (json == NULL) {
     ESP_LOGE("FOTA", "downloaded file is not a valid json, aborting...\n");
     cJSON_Delete(json);
@@ -88,10 +87,6 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
     cJSON_Delete(json);
     return FOTA_JSON_SAME_VERSION;
   }
-  ESP_LOGI("FOTA",
-           "current firmware version (%d) is lower than the "
-           "available one (%d), upgrading...",
-           FIRMWARE_VERSION, newVersion);
 
   const cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
   if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
@@ -99,8 +94,6 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
     cJSON_Delete(json);
     return FOTA_JSON_URL_ERROR;
   }
-  ESP_LOGI("FOTA", "downloading and installing new firmware (%s)...",
-           file->valuestring);
   snprintf(firmwareURI, buffSize, "%s", file->valuestring);
   cJSON_Delete(json);
   return 0;
