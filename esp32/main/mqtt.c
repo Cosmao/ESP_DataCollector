@@ -9,6 +9,13 @@
 // TODO: Add mTLS or something similar, subscribe to topic for new firmware
 // updates and start a https update then
 
+extern const uint8_t client_cert_pem_start[] asm("_binary_client_crt_start");
+extern const uint8_t client_cert_pem_end[] asm("_binary_client_crt_end");
+extern const uint8_t client_key_pem_start[] asm("_binary_client_key_start");
+extern const uint8_t client_key_pem_end[] asm("_binary_client_key_end");
+extern const uint8_t server_cert_pem_start[] asm("_binary_ca_crt_start");
+extern const uint8_t server_cert_pem_end[] asm("_binary_ca_crt_end");
+
 static const char *MQTTTAG = "Mqtt status";
 
 static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
@@ -51,8 +58,14 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
 
 static esp_mqtt_client_handle_t mqttInit(void) {
   const esp_mqtt_client_config_t mqtt_conf = {
-      .broker.address.uri = "mqtt://pajjen.local:1883",
-  };
+      //.broker.address.uri = "mqtt://pajjen.local:1883",
+      .broker.address.uri = "mqtts://archlinux.local:8883",
+      .broker.verification.certificate = (const char *)server_cert_pem_start,
+      .broker.verification.skip_cert_common_name_check = true,
+      .credentials = {.authentication = {
+                          .certificate = (const char *)client_cert_pem_start,
+                          .key = (const char *)client_key_pem_start,
+                      }}};
   esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_conf);
   esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler,
                                  client);
@@ -68,7 +81,7 @@ void mqttTask(void *pvParameter) {
     esp_mqtt_client_handle_t mqttClient = mqttInit();
     char buff[buffSize];
     while (true) {
-      checkForFOTA();
+      // checkForFOTA();
       snprintf(buff, buffSize, "{ \"Temperature\":%d.%d, \"Humidity\":%d.%d }",
                dhtStructPtr->temperature.integer,
                dhtStructPtr->temperature.decimal,

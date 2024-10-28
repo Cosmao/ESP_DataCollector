@@ -1,0 +1,9 @@
+services:
+  mqtt-server:
+    container_name: mqtt-server
+    build:
+      context: ./mqttDocker/
+      dockerfile: Dockerfile
+    ports:
+      - 2222:22
+      - 8883:8883
