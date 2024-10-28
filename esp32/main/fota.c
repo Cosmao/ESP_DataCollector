@@ -15,7 +15,8 @@
   "main/esp32/build/firmware.json"
 
 // receive buffer
-char rcv_buffer[200];
+#define rcvBufferSize 200
+char rcv_buffer[rcvBufferSize];
 
 // TODO: Change to the https more robust event handler
 // clean up code into functions
@@ -36,7 +37,8 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
     break;
   case HTTP_EVENT_ON_DATA:
     if (!esp_http_client_is_chunked_response(evt->client)) {
-      strncpy(rcv_buffer, (char *)evt->data, evt->data_len);
+      strncpy(rcv_buffer, (char *)evt->data,
+              rcvBufferSize > evt->data_len ? evt->data_len : rcvBufferSize);
     }
     break;
   case HTTP_EVENT_ON_FINISH:
@@ -65,30 +67,35 @@ static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   cJSON *json = cJSON_Parse(rcv_buffer);
   if (json == NULL) {
     ESP_LOGE("FOTA", "downloaded file is not a valid json, aborting...\n");
-    cJSON_free(json);
+    cJSON_Delete(json);
     return FOTA_JSON_NO_JSON;
   }
+
   const cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
   if (!cJSON_IsNumber(version)) {
     ESP_LOGE("FOTA", "unable to read new version, aborting...\n");
-    cJSON_free(json);
+    cJSON_Delete(json);
     return FOTA_JSON_NO_VERSION;
   }
 
-  int newVersion = version->valueint;
+  const int newVersion = version->valueint;
   if (!(newVersion > FIRMWARE_VERSION)) {
-    cJSON_free(json);
+    ESP_LOGI("FOTA",
+             "current firmware version (%d) is greater than or "
+             "equal to the available one (%d) nothing to do",
+             FIRMWARE_VERSION, newVersion);
+    cJSON_Delete(json);
     return FOTA_JSON_SAME_VERSION;
   }
 
   const cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
   if (!cJSON_IsString(file) || !(file->valuestring != NULL)) {
     ESP_LOGE("FOTA", "Error reading fota URI");
-    cJSON_free(json);
+    cJSON_Delete(json);
     return FOTA_JSON_URL_ERROR;
   }
   snprintf(firmwareURI, buffSize, "%s", file->valuestring);
-  cJSON_free(json);
+  cJSON_Delete(json);
   return 0;
 }
 
@@ -105,6 +112,7 @@ static esp_err_t preformOTA(const char *url) {
 
   esp_err_t ret = esp_https_ota(&ota_config);
   if (ret == ESP_OK) {
+    ESP_LOGW("FOTA", "OTA successful, restarting");
     esp_restart();
   } else {
     ESP_LOGE("FOTA", "FOTA failed!");
