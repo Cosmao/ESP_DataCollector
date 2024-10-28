@@ -44,7 +44,8 @@ services:
       - MQTT_PORT=8883
       - INFLUXDB_HOST=influxdb
       - INFLUXDB_PORT=8086
-      - INFLUXDB_DB=your_database_name
+      - INFLUXDB_DB=buckit
+      - INFLUXDB_TOKEN=GmZeYX273XMORFpZT6rImWkSj2r9QrM1OxkRSrKp_fn97N9rmBWI6CKFJW4uwQnRo7YjxcUD6Fub44enczUlLQ==
     volumes:
       - ./certs:/certs
     restart: always
