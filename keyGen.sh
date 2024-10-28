@@ -1,3 +1,7 @@
+if [ ! -d backend/certs ]; then
+  mkdir -p backend/certs
+fi
+
 cd backend/certs
 
 # Generate server key
