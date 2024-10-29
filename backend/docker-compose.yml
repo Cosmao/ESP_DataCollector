@@ -45,8 +45,10 @@ services:
     restart: always
 
   mqtt_consumer:
-    build: ./mqtt_consumer
     container_name: mqtt_consumer
+    build:
+      context: ./mqtt_consumer/
+      dockerfile: Dockerfile
     depends_on:
       - mosquitto
       - influxdb2
@@ -59,8 +61,6 @@ services:
       INFLUXDB_PORT: 8086
       INFLUXDB_DB: buckit
       INFLUXDB_TOKEN: /run/secrets/influxdb2-admin-token
-    volumes:
-      - ./certs:/certs
     restart: always
 
 secrets:

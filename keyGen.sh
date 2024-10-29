@@ -26,3 +26,12 @@ openssl x509 -req -in mqttConsumer.csr -CA ca.crt -CAkey server.key -CAcreateser
 cp ca.crt ../../esp32/main/
 cp client.crt ../../esp32/main/
 cp client.key ../../esp32/main/
+
+# Copy to mqttConsumer 
+cp ca.crt ../mqtt_consumer/
+cp mqttConsumer.crt ../mqtt_consumer/
+cp mqttConsumer.key ../mqtt_consumer/
+
+# Copy to mosquitto
+cp ca.crt ../mosquitto/
+cp server.key ../mosquitto/
