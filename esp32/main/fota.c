@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define FIRMWARE_VERSION 7
+#define FIRMWARE_VERSION 8
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "main/esp32/build/firmware.json"
@@ -143,11 +143,14 @@ void checkForFOTA(void) {
 void fotaTask(void *pvParameter) {
 #define updateDelayTime 1000 * 60 * 10
   settings_t *settingsPtr = (settings_t *)pvParameter;
-  if (settingsPtr->isConnectedToWifi) {
-    ESP_LOGE("FOTA", "Checking for FOTA");
-    checkForFOTA();
-
+  while (1) {
+    if (settingsPtr->isConnectedToWifi) {
+      ESP_LOGI("FOTA", "Checking for FOTA");
+      checkForFOTA();
+    }
     vTaskDelay(updateDelayTime / portTICK_PERIOD_MS);
   }
+
+  ESP_LOGE("FOTA", "Fota thread exiting");
   vTaskDelete(NULL);
 }
