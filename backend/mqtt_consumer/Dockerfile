@@ -20,4 +20,4 @@ RUN pip install -r requirements.txt
 COPY mqtt_to_influx.py .
 
 # Run the script
-CMD ["python", "mqtt_to_influx.py"]
+CMD ["python3", "mqtt_to_influx.py"]
