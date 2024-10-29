@@ -63,7 +63,7 @@ void app_main(void) {
 
   TaskHandle_t fotaHandle = NULL;
   taskRet =
-      xTaskCreate(&fotaTask, "DHT task", 4096, dhtStructPtr, 4, &dhtHandle);
+      xTaskCreate(&fotaTask, "Fota Task", 4096, dhtStructPtr, 4, &dhtHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
     vTaskDelete(fotaHandle);
     ESP_LOGE("FOTA", "Could not allocate memory for task");

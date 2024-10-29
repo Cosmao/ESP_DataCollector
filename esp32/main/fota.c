@@ -144,6 +144,7 @@ void fotaTask(void *pvParameter) {
 #define updateDelayTime 1000 * 60 * 10
   settings_t *settingsPtr = (settings_t *)pvParameter;
   if (settingsPtr->isConnectedToWifi) {
+    ESP_LOGE("FOTA", "Checking for FOTA");
     checkForFOTA();
 
     vTaskDelay(updateDelayTime / portTICK_PERIOD_MS);
