@@ -5,7 +5,10 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
+#include "freertos/idf_additions.h"
+#include "include/https.h"
 #include "include/wifi.h"
+#include "portmacro.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -17,10 +20,6 @@
 // receive buffer
 #define rcvBufferSize 200
 char rcv_buffer[rcvBufferSize];
-
-// TODO: Change to the https more robust event handler
-// clean up code into functions
-// Maybe make it trigger on something? Or just a thread running rarely?
 
 // esp_http_client event handler
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
@@ -62,7 +61,6 @@ static esp_err_t buildHttpClient(esp_http_client_handle_t *client) {
   return ESP_OK;
 }
 
-// TODO: Fix a new return enum
 static fota_err_t parseJSON(char *firmwareURI, int buffSize) {
   cJSON *json = cJSON_Parse(rcv_buffer);
   if (json == NULL) {
@@ -141,4 +139,15 @@ void checkForFOTA(void) {
 
   preformOTA(buff);
   esp_http_client_cleanup(client);
+}
+
+void fotaTask(void *pvParameter) {
+#define updateDelayTime 1000 * 60 * 10
+  settings_t *settingsPtr = (settings_t *)pvParameter;
+  if (settingsPtr->isConnectedToWifi) {
+    checkForFOTA();
+
+    vTaskDelay(updateDelayTime / portTICK_PERIOD_MS);
+  }
+  vTaskDelete(NULL);
 }

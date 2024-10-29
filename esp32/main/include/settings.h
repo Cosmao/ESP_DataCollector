@@ -7,6 +7,7 @@
 #define settingsBufferSize 64
 
 typedef struct settings_t {
+  bool isConnectedToWifi;
   char name[settingsBufferSize];
   char SSID[settingsBufferSize];
   char password[settingsBufferSize];

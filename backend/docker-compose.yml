@@ -2,76 +2,43 @@ services:
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
-    volumes:
-      - ./mosquitto:/mosquitto/config
-      - ./certs:/mosquitto
+    build:
+      context: ./mosquitto/
+      dockerfile: Dockerfile
     ports:
       - "8883:8883"
     restart: always
 
   influxdb2:
-    image: influxdb:2
+    container_name: influxdb2
+    build:
+      context: ./influxdb/
+      dockerfile: Dockerfile
     ports:
       - 8086:8086
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
-      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password 
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
-      DOCKER_INFLUXDB_INIT_ORG: docs 
-      DOCKER_INFLUXDB_INIT_BUCKET: buckit
-    secrets:
-      - influxdb2-admin-username
-      - influxdb2-admin-password
-      - influxdb2-admin-token
-    volumes:
-      - type: volume
-        source: influxdb2-data
-        target: /var/lib/influxdb2
-      - type: volume
-        source: influxdb2-config
-        target: /etc/influxdb2
 
   grafana:
-    image: grafana/grafana:latest
     container_name: grafana
-    volumes:
-      - ./grafana:/etc/grafana
-      - grafana_data:/var/lib/grafana
+    build:
+      context: ./grafana/
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
     restart: always
 
   mqtt_consumer:
-    build: ./mqtt_consumer
     container_name: mqtt_consumer
+    build:
+      context: ./mqtt_consumer/
+      dockerfile: Dockerfile
     depends_on:
       - mosquitto
       - influxdb2
-    secrets:
-      - influxdb2-admin-token
     environment:
       MQTT_BROKER: mosquitto
       MQTT_PORT: 8883
       INFLUXDB_HOST: influxdb2
       INFLUXDB_PORT: 8086
       INFLUXDB_DB: buckit
-      INFLUXDB_TOKEN: /run/secrets/influxdb2-admin-token
-    volumes:
-      - ./certs:/certs
+      INFLUXDB_TOKEN: MyInitialAdminToken0==
     restart: always
-
-secrets:
-  influxdb2-admin-username:
-    file: ./.env.influxdb2-admin-username
-  influxdb2-admin-password:
-    file: ./.env.influxdb2-admin-password
-  influxdb2-admin-token:
-    file: ./.env.influxdb2-admin-token
-
-volumes:
-  influxdb2-data:
-  influxdb2-config:
-  grafana_data:

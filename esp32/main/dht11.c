@@ -88,7 +88,7 @@ dht_err_t dhtRead(dht_t *dht) {
     return DHT_BAD_DATA;
   }
 
-  if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10)) {
+  if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10) == pdTRUE) {
     dht->temperature.integer = incomingData[2];
     dht->temperature.decimal = incomingData[3];
     dht->humidity.integer = incomingData[0];

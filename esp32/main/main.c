@@ -4,6 +4,7 @@
 #include "freertos/idf_additions.h"
 #include "freertos/projdefs.h"
 #include "include/dht11.h"
+#include "include/fota.h"
 #include "include/mqtt.h"
 #include "include/settings.h"
 #include "include/usb.h"
@@ -30,9 +31,13 @@ void app_main(void) {
 
   settingsPtr->dht = dhtStructPtr;
 
+  if (!wifiInitStation(settingsPtr)) {
+    ESP_LOGE("WIFI", "Wifi failed to connect");
+  }
+
   TaskHandle_t mqttHandle = NULL;
   BaseType_t taskRet =
-      xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 5, &mqttHandle);
+      xTaskCreate(&mqttTask, "MQTT task", 8192, settingsPtr, 4, &mqttHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
     vTaskDelete(mqttHandle);
     ESP_LOGE("HTTP", "Could not allocate memory for task");
@@ -49,10 +54,19 @@ void app_main(void) {
   }
 
   TaskHandle_t usbHandle = NULL;
-  taskRet = xTaskCreate(&usbTask, "USB Task", 4096, settingsPtr, 5, &usbHandle);
+  taskRet = xTaskCreate(&usbTask, "USB Task", 4096, settingsPtr, 3, &usbHandle);
   if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
     vTaskDelete(usbHandle);
     ESP_LOGE("USB", "Could not allocate memory for task");
+    esp_restart();
+  }
+
+  TaskHandle_t fotaHandle = NULL;
+  taskRet =
+      xTaskCreate(&fotaTask, "DHT task", 4096, dhtStructPtr, 4, &dhtHandle);
+  if (taskRet == errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY) {
+    vTaskDelete(fotaHandle);
+    ESP_LOGE("FOTA", "Could not allocate memory for task");
     esp_restart();
   }
 }
