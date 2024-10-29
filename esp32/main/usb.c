@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 static interpret_ret interpretInput(char *str, settings_t *settings) {
-  if (xSemaphoreTake(settings->settingsMutex, (TickType_t)10)) {
+  if (xSemaphoreTake(settings->settingsMutex, (TickType_t)10) == pdTRUE) {
     interpret_ret ret = INTERP_BAD_DATA;
     switch (str[0]) {
     case 's':
