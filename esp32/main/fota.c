@@ -6,13 +6,12 @@
 #include "esp_https_ota.h"
 #include "esp_log.h"
 #include "freertos/idf_additions.h"
-#include "include/https.h"
 #include "include/wifi.h"
 #include "portmacro.h"
 #include <stdio.h>
 #include <string.h>
 
-#define FIRMWARE_VERSION 6
+#define FIRMWARE_VERSION 7
 #define UPDATE_JSON_URL                                                        \
   "https://raw.githubusercontent.com/Cosmao/ESP_DataCollector/refs/heads/"     \
   "main/esp32/build/firmware.json"
