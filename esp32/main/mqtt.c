@@ -84,7 +84,7 @@ void mqttTask(void *pvParameter) {
     char buff[buffSize];
     while (true) {
       if (xSemaphoreTake(dht->dhtMutex, (TickType_t)10) == pdTRUE) {
-        if (!dht->sent && mqttConnected) {
+        if ((!dht->sent) && (mqttConnected)) {
           snprintf(buff, buffSize, "{\"temperature\":%.1f,\"humidity\":%.1f}",
                    getDHTValue(&dht->temperature), getDHTValue(&dht->humidity));
           dht->sent = true;
