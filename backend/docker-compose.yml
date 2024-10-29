@@ -10,7 +10,10 @@ services:
     restart: always
 
   influxdb2:
-    image: influxdb:2
+    container_name: influxdb2
+    build:
+      context: ./influxdb/
+      dockerfile: Dockerfile
     ports:
       - 8086:8086
     environment:
@@ -24,24 +27,14 @@ services:
       - influxdb2-admin-username
       - influxdb2-admin-password
       - influxdb2-admin-token
-    volumes:
-      - type: volume
-        source: influxdb2-data
-        target: /var/lib/influxdb2
-      - type: volume
-        source: influxdb2-config
-        target: /etc/influxdb2
 
   grafana:
-    image: grafana/grafana:latest
     container_name: grafana
-    volumes:
-      - ./grafana:/etc/grafana
-      - grafana_data:/var/lib/grafana
+    build:
+      context: ./grafana/
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
     restart: always
 
   mqtt_consumer:
@@ -70,8 +63,3 @@ secrets:
     file: ./.env.influxdb2-admin-password
   influxdb2-admin-token:
     file: ./.env.influxdb2-admin-token
-
-volumes:
-  influxdb2-data:
-  influxdb2-config:
-  grafana_data:
