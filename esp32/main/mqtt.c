@@ -36,6 +36,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
     break;
   }
   case MQTT_EVENT_PUBLISHED: {
+    ESP_LOGI("MQTT", "Published message");
     break;
   }
   case MQTT_EVENT_DATA: {
