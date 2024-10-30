@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define dhtTimeBetweenRead 5
+#define dhtTimeBetweenRead 15
 
 typedef enum dht_err_t {
   DHT_OK,
