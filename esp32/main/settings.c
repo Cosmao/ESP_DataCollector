@@ -16,5 +16,6 @@ esp_err_t settingsInit(settings_t *settings) {
   nvsReadErrCheck(
       nvsRead(ESP_pw, settings->password, sizeof(settings->password)));
   nvsReadErrCheck(nvsRead(ESP_Name, settings->name, sizeof(settings->name)));
+  settings->isConnectedToWifi = false;
   return ESP_OK;
 }

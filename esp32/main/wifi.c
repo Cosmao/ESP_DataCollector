@@ -140,6 +140,7 @@ bool wifiInitStation(settings_t *settings) {
   } else if (bits & WIFI_FAIL_BIT) {
     ESP_LOGI(WIFITAG, "Failed to connect to SSID:%s, password:REDACTED",
              settings->SSID);
+    settings->isConnectedToWifi = false;
   } else {
     ESP_LOGE(WIFITAG, "UNEXPECTED EVENT");
   }
