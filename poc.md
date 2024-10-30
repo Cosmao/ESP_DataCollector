@@ -30,7 +30,7 @@ Alla komponenter utöver ESP32 körs i enskilda Docker-containrar på en AWS ECS
 2. **Begränsade åtkomsttoken**: Endast de nödvändiga rättigheterna ges till varje komponent, exempelvis mellan Grafana och InfluxDB.
 3. **Containerberoenden och loggning**: Alla komponenter körs som containrar i en isolerad miljö med loggning.
 4. **Exponerade portar**: Endast nödvändiga portar är öppna mot omvärlden (8883 för MQTT, 8086 för InfluxDB, och 3000 för Grafana).
-5. FOTA-stöd: Systemet har stöd för FOTA och använder Github-lagring för firmware-uppdateringar via HTTPS med giltiga certifikat.
+5. **FOTA-stöd**: Systemet har stöd för FOTA och använder Github-lagring för firmware-uppdateringar via HTTPS med giltiga certifikat.
 
 ## CRA-krav
 
@@ -39,10 +39,10 @@ För att uppfylla Cyber Resilience Act (CRA) behövs följande åtgärder som ju
 - **CN-verifiering** för MQTT-certifikat kommer att införas för att öka säkerheten. 
 - **Signering av binärer**: För att verifiera att firmware är autentisk och inte manipulerad.
 - **Secure Boot**: Förhindra att osignerad kod körs på ESP32 genom att bränna eFUSE-bitar för att aktivera säkra uppstartskontroller.
-- Rollback: Systemet kommer att markera felaktig firmware som oanvändbar och återgå till en tidigare fungerande version.
+- **Rollback**: Systemet kommer att markera felaktig firmware som oanvändbar och återgå till en tidigare fungerande version.
 
 ## Förbättringsområden
 
-- Förbättrad säkerhet i AWS-miljön, just nu är det väldigt simpelt.
-- Ringbuffer: Spara mätta värden och skicka dom batchat för att spara på batteri.
-- Deep sleep: Gå ner och sov emellan mätningar, just nu är tempot högt för att säkerställa att hela flödet fungerar.
+- **Förbättrad** säkerhet i AWS-miljön, just nu är det väldigt simpelt.
+- **Ringbuffer**: Spara mätta värden och skicka dom batchat för att spara på batteri.
+- **Deep sleep**: Gå ner och sov emellan mätningar, just nu är tempot högt för att säkerställa att hela flödet fungerar.
