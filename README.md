@@ -14,3 +14,6 @@
 
 ## Notes
 You might need to run `idf.py menuconfig` to set it up for tinyUSB, 2 FOTA partitions.
+
+## Demo
+You can visit `emil.kool.se:3000` for a demo. Login with `guest` and password `nackademin`
