@@ -27,6 +27,8 @@ if [ -d ../../esp32/main ]; then
   cp ca.crt ../../esp32/main/
   cp client.crt ../../esp32/main/
   cp client.key ../../esp32/main/
+else
+  echo "ERROR: Could not find esp32 directory for keys!"
 fi
 
 # Copy to mqttConsumer 
@@ -34,10 +36,14 @@ if [ -d ../mqtt_consumer/ ]; then
   cp ca.crt ../mqtt_consumer/
   cp mqttConsumer.crt ../mqtt_consumer/
   cp mqttConsumer.key ../mqtt_consumer/
+else
+  echo "ERROR: Could not find mqttConsumer directory for keys!"
 fi
 
 # Copy to mosquitto
 if [ -d ../mosquitto/ ]; then
   cp ca.crt ../mosquitto/
   cp server.key ../mosquitto/
+else
+  echo "ERROR: Could not find mqttConsumer directory for keys!"
 fi
