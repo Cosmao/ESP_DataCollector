@@ -13,7 +13,8 @@
 8. Either manually restart or send a `r` to the esp over USB.
 
 ## Notes
-You might need to run `idf.py menuconfig` to set it up for tinyUSB, 2 FOTA partitions.
+You might need to run `idf.py menuconfig` to set it up for tinyUSB, 2 FOTA partitions. \
+[Proof of Concept can be found here](poc.md)
 
 ## Demo
 You can visit `emil.kool.se:3000` for a demo. Login with `guest` and password `nackademin`
