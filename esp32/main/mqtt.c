@@ -60,7 +60,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t event_base,
 
 static esp_mqtt_client_handle_t mqttInit(void) {
   const esp_mqtt_client_config_t mqtt_conf = {
-      .broker.address.uri = "mqtts://3.70.53.190:8883",
+      .broker.address.uri = "mqtts://emil.kool.se:8883",
       .broker.verification.certificate = (const char *)server_cert_pem_start,
       .broker.verification.skip_cert_common_name_check = true,
       .credentials = {.authentication = {
