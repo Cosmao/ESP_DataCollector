@@ -23,15 +23,21 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey server.key -CAcreateserial -o
 openssl x509 -req -in mqttConsumer.csr -CA ca.crt -CAkey server.key -CAcreateserial -out mqttConsumer.crt -days 3650
 
 # copy to the ESP dir
-cp ca.crt ../../esp32/main/
-cp client.crt ../../esp32/main/
-cp client.key ../../esp32/main/
+if [ -d ../../esp32/main ]; then
+  cp ca.crt ../../esp32/main/
+  cp client.crt ../../esp32/main/
+  cp client.key ../../esp32/main/
+fi
 
 # Copy to mqttConsumer 
-cp ca.crt ../mqtt_consumer/
-cp mqttConsumer.crt ../mqtt_consumer/
-cp mqttConsumer.key ../mqtt_consumer/
+if [ -d ../mqtt_consumer/ ]; then
+  cp ca.crt ../mqtt_consumer/
+  cp mqttConsumer.crt ../mqtt_consumer/
+  cp mqttConsumer.key ../mqtt_consumer/
+fi
 
 # Copy to mosquitto
-cp ca.crt ../mosquitto/
-cp server.key ../mosquitto/
+if [ -d ../mosquitto/ ]; then
+  cp ca.crt ../mosquitto/
+  cp server.key ../mosquitto/
+fi
