@@ -1,14 +1,16 @@
-## Todo
-- AWS
-- Om tid finns, FIXA USB SKITEN
-
 ### How to use
-Firstly generate all the keys requried by running the keyGen bash script \
-Compile or flash the ESP code \
-Docker stuff in this order \
-```docker-compose up -d influxdb``` \
-Setup your influxdb login and either name your bucket to buckit or you'll have to change it in a lot of places \
-Get the full access token and add it to your docker-compose for mqtt_consumer \
-After that you can run \
-```docker-compose up -d``` \
-If all endpoints are setup and access tokens influxdb should start seeing data
+1. Clone the repo
+2. Run the `keyGen.sh` bash script to generate all the keys and put them in the correct directory
+3. Compile and flash the ESP (Change your endpoints in the code as well!)
+4. Change any usernames, passwords and tokens inside the docker-compose.yml 
+5. Start your docker project either with `docker-compose up -d` inside the backend directory or manually in this order 
+    - influxdb
+    - mosquitto
+    - mqtt_consumer
+    - grafana
+6. Configure the wifi settings on the ESP32 with the provided settings script `settings.sh` inside the esp32 directory using the following syntax. ```./settings.sh {USB_PORT} {SSID} {PASSWORD} {DEVICE_NAME}```
+7. Make sure it says NVS successfuly.
+8. Either manually restart or send a `r` to the esp over USB.
+
+## Notes
+You might need to run `idf.py menuconfig` to set it up for tinyUSB, 2 FOTA partitions.
